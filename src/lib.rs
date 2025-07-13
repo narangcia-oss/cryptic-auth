@@ -1,14 +1,21 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+// src/lib.rs - La Porte Principale de l'Authentification
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+//! Une crate d'authentification robuste et sécurisée, inspirée par la sagesse d'Ahri.
+//! Elle fournit des outils pour la gestion des utilisateurs, le hachage des mots de passe,
+//! la gestion des sessions et des tokens, et bien plus encore.
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+// Rendre les modules publics pour qu'ils soient accessibles aux utilisateurs de la crate
+pub mod error;
+pub mod password;
+pub mod policy;
+pub mod token;
+pub mod user;
+pub mod rbac; // Module optionnel pour le contrôle d'accès basé sur les rôles
+
+// Réexporter les éléments clés pour une utilisation plus facile
+pub use error::{AuthError, Result};
+
+// Vous pouvez ajouter d'autres 'use' ici au fur et à mesure que votre crate grandit
+// Par exemple:
+// pub use user::{User, Credentials};
+// pub use token::TokenPair;
