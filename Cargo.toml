@@ -1,15 +1,55 @@
 [package]
 name = "z3-auth"
-version = "0.1.0-alpha"
+version = "0.1.0"
 edition = "2024"
+description = "Une crate d'authentification robuste et sécurisée pour Rust, inspirée par la sagesse protectrice d'Ahri."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/zy-35/z3-auth"
+keywords = [
+  "auth",
+  "authentication",
+  "security",
+  "jwt",
+  "argon2",
+  "rust",
+  "ahri",
+]
+categories = ["authentication", "cryptography", "web-programming"]
+
+[lib]
 
 [dependencies]
-anyhow = "1.0.98"
-tokio = { version = "1.46.1", features = ["full"] }
+# Pour le hachage des mots de passe. Robuste et sécurisé.
+argon2 = "0.5.3"
+# Pour la manipulation des JWT.
 jsonwebtoken = "9.3.1"
-bcrypt = "0.17.0"
+# Pour gérer les dates et durées (expiration des tokens).
+chrono = { version = "0.4.41", features = ["serde"] }
+# Pour générer des identifiants uniques.
+uuid = { version = "1.17.0", features = ["serde", "v4"] }
+# Pour tes types d'erreurs (ergonomie et clarté).
+thiserror = "2.0.12"
+# Pour la sérialisation/désérialisation (ex: config, claims JWT).
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-uuid = { version = "1.17.0", features = ["v4"] }
-chrono = "0.4.41"
-validator = "0.20.0"
+# Pour rendre les méthodes de trait async.
+async-trait = "0.1.88"
+# Pour la génération de nombres aléatoires sécurisés (sels, etc.).
+rand = "0.9.1"
+# Pour la journalisation professionnelle (niveau infos/erreurs).
+log = "0.4.27"
+
+[dev-dependencies]
+# Pour les tests asynchrones et les exemples
+tokio = { version = "1.46.1", features = ["full"] }
+# Pour la journalisation dans les tests/développement
+env_logger = "0.11.8"
+# Pour les benchmarks de performance
+criterion = { version = "0.6.0", features = [
+  "async",
+  "async_tokio",
+], default-features = false }
+
+[[bench]]
+name = "hashing_perf"
+harness = false

@@ -5,15 +5,18 @@
 //! la gestion des sessions et des tokens, et bien plus encore.
 
 // Rendre les modules publics pour qu'ils soient accessibles aux utilisateurs de la crate
+pub mod auth_service;
 pub mod error;
 pub mod password;
 pub mod policy;
 pub mod token;
 pub mod user;
 pub mod rbac; // Module optionnel pour le contrôle d'accès basé sur les rôles
+pub mod utils;
 
 // Réexporter les éléments clés pour une utilisation plus facile
-pub use error::{AuthError, Result};
+pub use auth_service::AuthService;
+pub use error::AuthError;
 
 // Vous pouvez ajouter d'autres 'use' ici au fur et à mesure que votre crate grandit
 // Par exemple:
