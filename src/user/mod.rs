@@ -4,18 +4,16 @@
 //! et les traits pour les opérations de persistance.
 
 /// Représente un utilisateur enregistré dans le système.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct User {
     pub id: String,
-    pub username: String,
-    pub email: String,
-    pub password_hash: String,
+    pub credentials: Credentials,
 }
 
 /// Représente les identifiants fournis lors de la connexion ou de l'inscription.
 #[derive(Debug, Clone)]
 pub struct Credentials {
-    pub identifier: String, // Nom d'utilisateur ou email
+    pub identifier: String,
     pub password: String,
 }
 
