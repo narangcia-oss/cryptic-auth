@@ -37,16 +37,24 @@ impl PasswordPolicy {
         }
 
         if self.require_uppercase && !password.chars().any(|c| c.is_ascii_uppercase()) {
-            return Err(AuthError::InvalidInput("Password must contain at least one uppercase letter.".to_string()));
+            return Err(AuthError::InvalidInput(
+                "Password must contain at least one uppercase letter.".to_string(),
+            ));
         }
         if self.require_lowercase && !password.chars().any(|c| c.is_ascii_lowercase()) {
-            return Err(AuthError::InvalidInput("Password must contain at least one lowercase letter.".to_string()));
+            return Err(AuthError::InvalidInput(
+                "Password must contain at least one lowercase letter.".to_string(),
+            ));
         }
         if self.require_digit && !password.chars().any(|c| c.is_ascii_digit()) {
-            return Err(AuthError::InvalidInput("Password must contain at least one digit.".to_string()));
+            return Err(AuthError::InvalidInput(
+                "Password must contain at least one digit.".to_string(),
+            ));
         }
         if self.require_special_char && !password.chars().any(|c| !c.is_ascii_alphanumeric()) {
-            return Err(AuthError::InvalidInput("Password must contain at least one special character.".to_string()));
+            return Err(AuthError::InvalidInput(
+                "Password must contain at least one special character.".to_string(),
+            ));
         }
         Ok(())
     }

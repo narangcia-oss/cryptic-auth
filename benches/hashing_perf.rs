@@ -2,7 +2,7 @@
 
 //! Ce fichier contient les benchmarks pour mesurer les performances des fonctions critiques.
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 // Fonction mock simple pour simuler un travail async
@@ -18,9 +18,8 @@ async fn mock_hashing(password: &str) -> String {
 fn bench_password_hashing(c: &mut Criterion) {
     let password = "my_super_secret_password_123!";
     c.bench_function("password_hashing", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-            mock_hashing(black_box(password)).await
-        })
+        b.to_async(tokio::runtime::Runtime::new().unwrap())
+            .iter(|| async { mock_hashing(black_box(password)).await })
     });
 }
 
@@ -36,13 +35,14 @@ fn bench_password_verification(c: &mut Criterion) {
     let password = "my_super_secret_password_123!";
     let hashed_password = "mock_hashed_my_super_secret_password_123!";
     c.bench_function("password_verification", |b| {
-        b.to_async(tokio::runtime::Runtime::new().unwrap()).iter(|| async {
-            mock_verification(black_box(password), black_box(hashed_password)).await
-        })
+        b.to_async(tokio::runtime::Runtime::new().unwrap())
+            .iter(|| async {
+                mock_verification(black_box(password), black_box(hashed_password)).await
+            })
     });
 }
 
-criterion_group!{
+criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
     targets = bench_password_hashing, bench_password_verification

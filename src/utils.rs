@@ -4,7 +4,7 @@
 
 /// Génère une chaîne aléatoire sécurisée pour les clés ou sels.
 pub fn generate_random_string(length: usize) -> String {
-    use rand::{rng, Rng};
+    use rand::{Rng, rng};
     let chars: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     (0..length)
         .map(|_| {

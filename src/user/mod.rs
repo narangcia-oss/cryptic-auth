@@ -21,7 +21,10 @@ pub struct Credentials {
 #[async_trait::async_trait]
 pub trait UserRepository {
     /// Trouve un utilisateur par son identifiant (username ou email).
-    async fn find_by_identifier(&self, identifier: &str) -> Result<Option<User>, crate::error::AuthError>;
+    async fn find_by_identifier(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<User>, crate::error::AuthError>;
     /// Crée un nouvel utilisateur dans la persistance.
     async fn create(&self, user: User) -> Result<User, crate::error::AuthError>;
     /// Met à jour un utilisateur existant.

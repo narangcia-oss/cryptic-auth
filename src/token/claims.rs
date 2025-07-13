@@ -2,7 +2,7 @@
 
 //! Définit les structures de revendications (claims) pour les tokens d'authentification.
 
-use chrono::{serde::ts_seconds, TimeZone, Utc};
+use chrono::{TimeZone, Utc, serde::ts_seconds};
 use serde::{Deserialize, Serialize};
 
 /// Trait commun pour toutes les revendications de token.
