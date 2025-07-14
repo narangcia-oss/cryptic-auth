@@ -1,5 +1,3 @@
-// src/user/mod.rs - Gestion des Profils d'Utilisateurs
-
 //! Ce module définit les structures de données pour les utilisateurs
 //! et les traits pour les opérations de persistance.
 

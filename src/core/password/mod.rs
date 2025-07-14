@@ -1,5 +1,3 @@
-// src/password/mod.rs - L'Encre Indélébile des Mots de Passe
-
 //! Ce module gère le hachage et la vérification sécurisée des mots de passe.
 
 use crate::error::AuthError;

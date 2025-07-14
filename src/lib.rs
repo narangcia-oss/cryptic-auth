@@ -6,11 +6,8 @@
 
 // Rendre les modules publics pour qu'ils soient accessibles aux utilisateurs de la crate
 pub mod auth_service;
+pub mod core;
 pub mod error;
-pub mod password;
-pub mod policy;
-pub mod token;
-pub mod user;
 pub mod utils;
 
 // Réexporter les éléments clés pour une utilisation plus facile

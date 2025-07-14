@@ -1,5 +1,3 @@
-// src/policy/mod.rs - Les Lignes Directrices de Sécurité
-
 //! Ce module définit les politiques et règles de sécurité,
 //! comme les exigences de complexité des mots de passe.
 

@@ -1,5 +1,3 @@
-// src/token/mod.rs - Les Fragments de Destin des Tokens
-
 //! Ce module gère la création, la validation et le rafraîchissement des tokens d'authentification.
 
 use crate::error::AuthError;
@@ -22,7 +20,7 @@ pub trait TokenService {
     ) -> Result<TokenPair, AuthError>;
     /// Valide un token d'accès et extrait ses revendications.
     async fn validate_access_token<
-        C: serde::de::DeserializeOwned + crate::token::claims::Claims + Send,
+        C: serde::de::DeserializeOwned + crate::core::token::claims::Claims + Send,
     >(
         &self,
         token: &str,

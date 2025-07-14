@@ -1,5 +1,3 @@
-// src/token/claims.rs - Les Revendications Secrètes des Tokens
-
 //! Définit les structures de revendications (claims) pour les tokens d'authentification.
 
 use chrono::{TimeZone, Utc, serde::ts_seconds};
