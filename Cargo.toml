@@ -35,7 +35,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 # Pour rendre les méthodes de trait async.
 async-trait = "0.1.88"
 # Pour la génération de nombres aléatoires sécurisés (sels, etc.).
-rand = "0.9.1"
+rand = { version = "0.9.1" }
 # Pour la journalisation professionnelle (niveau infos/erreurs).
 log = "0.4.27"
 

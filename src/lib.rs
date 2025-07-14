@@ -8,7 +8,6 @@
 pub mod auth_service;
 pub mod core;
 pub mod error;
-pub mod utils;
 
 // Réexporter les éléments clés pour une utilisation plus facile
 pub use auth_service::AuthService;

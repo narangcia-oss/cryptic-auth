@@ -28,4 +28,8 @@ pub enum AuthError {
     NotImplemented(String),
     #[error("Invalid input data: {0}")]
     InvalidInput(String),
+    #[error("Mot de passe invalide: {0}")]
+    InvalidPassword(String),
+    #[error("Erreur de vérification: {0}")]
+    VerificationError(String),
 }
