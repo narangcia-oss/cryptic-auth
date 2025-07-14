@@ -38,6 +38,7 @@ async-trait = "0.1.88"
 rand = { version = "0.9.1" }
 # Pour la journalisation professionnelle (niveau infos/erreurs).
 log = "0.4.27"
+zeroize = { version = "1.8.1", features = ["derive"] }
 
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples
