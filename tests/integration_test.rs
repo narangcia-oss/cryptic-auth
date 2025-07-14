@@ -6,9 +6,10 @@ use z3_auth::Z3AuthService;
 
 #[tokio::test]
 async fn test_auth_service_signup_not_implemented() {
-    let auth_service = Z3AuthService::new(Box::new(
-        z3_auth::core::password::Argon2PasswordManager::new(),
-    ));
+    let auth_service = Z3AuthService::new(
+        Some(Box::new(z3_auth::core::password::Argon2PasswordManager::new())),
+        Some(Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new())),
+    ).expect("Failed to create auth service");
 
     let result = auth_service.signup().await;
     assert!(result.is_err());
@@ -20,9 +21,10 @@ async fn test_auth_service_signup_not_implemented() {
 
 #[tokio::test]
 async fn test_auth_service_login_not_implemented() {
-    let auth_service = Z3AuthService::new(Box::new(
-        z3_auth::core::password::Argon2PasswordManager::new(),
-    ));
+    let auth_service = Z3AuthService::new(
+        Some(Box::new(z3_auth::core::password::Argon2PasswordManager::new())),
+        Some(Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new())),
+    ).expect("Failed to create auth service");
 
     let result = auth_service.login().await;
     assert!(result.is_err());

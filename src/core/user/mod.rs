@@ -45,7 +45,7 @@ impl User {
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
         let credentials =
-            Credentials::from_plain_password(&manager, identifier, plain_password).await?;
+            Credentials::from_plain_password(manager, identifier, plain_password).await?;
 
         Ok(Self { id, credentials })
     }

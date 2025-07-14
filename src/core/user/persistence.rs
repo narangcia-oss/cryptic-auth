@@ -31,7 +31,7 @@ impl UserRepository for InMemoryUserRepo {
         let mut users = self
             .users
             .lock()
-            .map_err(|e| format!("Failed to lock users: {}", e))?;
+            .map_err(|e| format!("Failed to lock users: {e}"))?;
         users.push(user);
         Ok(())
     }

@@ -32,3 +32,11 @@ pub enum AuthError {
     #[error("Verification error: {0}")]
     VerificationError(String),
 }
+
+#[derive(Debug, Error)]
+pub enum Z3AuthServiceError {
+    #[error("MissingPasswordManager")]
+    MissingPasswordManager,
+    #[error("MissingPersistentUserManager")]
+    MissingPersistentUserManager,
+}
