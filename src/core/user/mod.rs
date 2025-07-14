@@ -53,11 +53,13 @@ impl User {
 
     /// Creates a user with a plaintext password (to be hashed)
     pub async fn with_plain_password(
+        manager: &crate::core::password::Argon2PasswordManager,
         id: String,
         identifier: String,
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
-        let credentials = Credentials::from_plain_password(identifier, plain_password).await?;
+        let credentials =
+            Credentials::from_plain_password(&manager, identifier, plain_password).await?;
 
         Ok(Self { id, credentials })
     }
@@ -74,16 +76,16 @@ impl Credentials {
 
     /// Creates credentials by hashing a plaintext password
     pub async fn from_plain_password(
+        manager: &crate::core::password::Argon2PasswordManager,
         identifier: String,
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
-        let manager = crate::core::password::Argon2PasswordManager::new();
-        let password_hash = super::password::SecurePasswordManager::hash_password(
-            &manager,
-            plain_password.as_str(),
-        )
-        .await
-        .map_err(|e| crate::error::AuthError::HashingError(format!("Couldn't hash : {e}")))?;
+        let password_hash =
+            super::password::SecurePasswordManager::hash_password(manager, plain_password.as_str())
+                .await
+                .map_err(|e| {
+                    crate::error::AuthError::HashingError(format!("Couldn't hash : {e}"))
+                })?;
 
         Ok(Self {
             identifier,
@@ -94,11 +96,11 @@ impl Credentials {
     /// Verifies a password against the stored hash
     pub async fn verify_password(
         &self,
+        manager: &crate::core::password::Argon2PasswordManager,
         plain_password: &PlainPassword,
     ) -> Result<bool, crate::error::AuthError> {
-        let manager = crate::core::password::Argon2PasswordManager::new();
         super::password::SecurePasswordManager::verify_password(
-            &manager,
+            manager,
             plain_password.as_str(),
             &self.password_hash,
         )
