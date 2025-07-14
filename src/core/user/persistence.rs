@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex}; // Pour une gestion concurrente sécurisée // S'as
 pub trait UserRepository: Send + Sync {
     fn add_user(&self, user: User) -> Result<(), String>;
     fn get_user_by_id(&self, id: &str) -> Option<User>;
+    fn get_user_by_identifier(&self, identifier: &str) -> Option<User>;
     // ... tu pourrais ajouter d'autres méthodes ici comme update_user, delete_user
 }
 
@@ -39,6 +40,14 @@ impl UserRepository for InMemoryUserRepo {
     fn get_user_by_id(&self, id: &str) -> Option<User> {
         let users = self.users.lock().ok()?; // Handle potential poisoning
         users.iter().find(|u| u.id == id).cloned()
+    }
+
+    fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
+        let users = self.users.lock().ok()?; // Handle potential poisoning
+        users
+            .iter()
+            .find(|u| u.credentials.identifier == identifier)
+            .cloned()
     }
 }
 
@@ -74,5 +83,11 @@ impl UserRepository for PersistentUsers {
             // PersistentUsers::Database(repo) => repo.get_user_by_id(id),
         }
     }
-}
 
+    fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
+        match self {
+            PersistentUsers::InMemory(repo) => repo.get_user_by_identifier(identifier),
+            // PersistentUsers::Database(repo) => repo.get_user_by_identifier(identifier),
+        }
+    }
+}
