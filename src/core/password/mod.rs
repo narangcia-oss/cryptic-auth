@@ -18,6 +18,7 @@ pub trait SecurePasswordManager {
     ) -> Result<bool, AuthError>;
 }
 
+#[derive(Default)]
 pub struct Argon2PasswordManager {
     hasher: Argon2<'static>,
 }
@@ -27,12 +28,6 @@ impl Argon2PasswordManager {
         Self {
             hasher: Argon2::default(),
         }
-    }
-}
-
-impl Default for Argon2PasswordManager {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
