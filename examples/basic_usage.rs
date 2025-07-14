@@ -8,7 +8,7 @@ use z3_auth::AuthService;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🌟 Démarrage de l'exemple basique de z3-auth...");
 
-    let auth_service = AuthService::new();
+    let auth_service = AuthService::new(Box::new(z3_auth::core::password::Argon2PasswordManager::new()));
 
     println!("Tentative de processus d'inscription...");
     match auth_service.signup().await {

@@ -7,18 +7,19 @@ use crate::error::AuthError;
 
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
-#[derive(Default, Debug)]
 pub struct AuthService {
     // Example fields that might be needed
     // user_repo: Box<dyn UserRepository + Send + Sync>,
-    // password_hasher: Box<dyn PasswordHasher + Send + Sync>,
+    password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
     // token_service: Box<dyn TokenService + Send + Sync>,
 }
 
 impl AuthService {
     /// Creates a new instance of AuthService.
-    pub fn new() -> Self {
-        AuthService::default()
+    pub fn new(
+        password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
+    ) -> Self {
+        AuthService { password_manager }
     }
 
     /// Attempts to register a new user.
