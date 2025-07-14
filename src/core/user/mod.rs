@@ -13,7 +13,6 @@ pub struct User {
 #[derive(Debug, Clone, Default)]
 pub struct Credentials {
     pub identifier: String,
-    /// The hashed password - never in plaintext!
     pub password_hash: String,
 }
 
@@ -30,19 +29,6 @@ impl PlainPassword {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-}
-
-/// Trait to abstract user persistence operations.
-#[async_trait::async_trait]
-pub trait UserRepository {
-    async fn find_by_identifier(
-        &self,
-        identifier: &str,
-    ) -> Result<Option<User>, crate::error::AuthError>;
-
-    async fn create(&self, user: User) -> Result<User, crate::error::AuthError>;
-
-    async fn update(&self, user: User) -> Result<User, crate::error::AuthError>;
 }
 
 impl User {
@@ -108,3 +94,5 @@ impl Credentials {
         .map_err(|e| crate::error::AuthError::VerificationError(format!("Couldn't verify : {e}")))
     }
 }
+
+pub mod persistence;

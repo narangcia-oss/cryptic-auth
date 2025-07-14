@@ -2,13 +2,15 @@
 
 //! Cet exemple démontre une utilisation basique de la crate 'z3-auth'.
 
-use z3_auth::AuthService;
+use z3_auth::Z3AuthService as AuthService;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🌟 Démarrage de l'exemple basique de z3-auth...");
 
-    let auth_service = AuthService::new(Box::new(z3_auth::core::password::Argon2PasswordManager::new()));
+    let auth_service = AuthService::new(Box::new(
+        z3_auth::core::password::Argon2PasswordManager::new(),
+    ));
 
     println!("Tentative de processus d'inscription...");
     match auth_service.signup().await {

@@ -10,7 +10,7 @@ pub mod core;
 pub mod error;
 
 // Re-export key elements for easier use
-pub use auth_service::AuthService;
+pub use auth_service::Z3AuthService;
 pub use error::AuthError;
 
 // You can add other 'use' statements here as your crate grows
