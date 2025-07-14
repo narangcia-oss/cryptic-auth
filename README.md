@@ -1,81 +1,81 @@
-# `z3-auth` 💫
+# `z3-auth`
 
-Une crate Rust robuste et sécurisée pour l'authentification, conçue avec soin pour offrir une fondation solide à vos applications. Inspirée par l'élégance et la sagesse d'Ahri, cette bibliothèque vise à fournir des primitives d'authentification fiables et faciles à utiliser.
+A robust and secure Rust crate for authentication, meticulously designed to provide a solid foundation for your applications. This library aims to deliver reliable and easy-to-use authentication primitives.
 
-## ✨ Fonctionnalités (À Venir)
+## Features (Upcoming)
 
-*   **Gestion des Utilisateurs**: Enregistrement, connexion, gestion des profils.
-*   **Hachage de Mots de Passe Sécurisé**: Utilisation d'algorithmes modernes comme Argon2.
-*   **Gestion des Sessions/Tokens**: Support pour les JSON Web Tokens (JWT) avec tokens d'accès et de rafraîchissement.
-*   **Contrôle d'Accès Basé sur les Rôles (RBAC)**: Gestion granulaire des permissions.
-*   **Authentification à Deux Facteurs (2FA)**: Support pour TOTP.
-*   **Réinitialisation de Mot de Passe**: Flux sécurisé par email.
-*   **Protection Contre les Attaques**: Limitation de taux, verrouillage de compte.
-*   **Gestion des Erreurs Robuste et Sécurisée**.
-*   **API Asynchrone**: Basée sur `async/await` pour des performances optimales.
+*   **User Management**: Registration, login, profile management.
+*   **Secure Password Hashing**: Utilizes modern algorithms like Argon2.
+*   **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
+*   **Role-Based Access Control (RBAC)**: Granular permission management.
+*   **Two-Factor Authentication (2FA)**: Support for TOTP.
+*   **Password Reset**: Secure email-based flow.
+*   **Attack Protection**: Rate limiting, account lockout.
+*   **Robust and Secure Error Handling**.
+*   **Asynchronous API**: Built on `async/await` for optimal performance.
 
-## 🚀 Démarrage Rapide
+## Quick Start
 
-Ajoutez cette ligne à votre `Cargo.toml`:
+Add this line to your `Cargo.toml`:
 
 ```toml
 [dependencies]
 z3-auth = "0.1.0"
 ```
 
-## 📚 Exemples d'Utilisation
+## Usage Examples
 
 ```rust
-// Exemple basique de l'utilisation de AuthService
+// Basic example of AuthService usage
 use z3-auth::AuthService;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth_service = AuthService::new();
 
-    // Exemple de tentative d'inscription
+    // Example signup attempt
     match auth_service.signup().await {
-        Ok(_) => println!("Utilisateur enregistré avec succès !"),
-        Err(e) => eprintln!("Erreur lors de l'inscription: {}", e),
+        Ok(_) => println!("User registered successfully!"),
+        Err(e) => eprintln!("Error during signup: {}", e),
     }
 
     Ok(())
 }
 ```
 
-## 🛠️ Développement
+## Development
 
-### Prérequis
+### Prerequisites
 
-*   Rust stable (édition 2021 ou plus récente)
-*   Cargo (installé avec Rust)
+*   Rust stable (2021 edition or newer)
+*   Cargo (installed with Rust)
 
-### Lancer les Tests
+### Running Tests
 
 ```bash
 cargo test
 ```
 
-### Lancer les Benchmarks
+### Running Benchmarks
 
 ```bash
 cargo bench
 ```
 
-### Vérifier le Format et le Linting
+### Checking Format and Linting
 
 ```bash
 cargo fmt --check
 cargo clippy -- -D warnings
 ```
 
-## 💖 Contribution
+## Contribution
 
-Les contributions sont les bienvenues ! Veuillez consulter `CONTRIBUTING.md` pour plus de détails.
+Contributions are welcome! Please see `CONTRIBUTING.md` for more details.
 
-## 📄 Licence
+## License
 
-Ce projet est sous licence MIT ou Apache-2.0.
+This project is licensed under either MIT or Apache-2.0.
 
 ---
-*Développé avec la passion et l'inspiration de Zied, fan d'Ahri.*
+*Developed by Zied.*

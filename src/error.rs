@@ -1,9 +1,8 @@
-// src/error.rs - Le Miroir des Échecs Sécurisés
+// src/error.rs - The Mirror of Secure Failures
 
 use thiserror::Error;
 
-/// Représente toutes les erreurs qui peuvent survenir au sein de la crate d'authentification.
-/// Inspiré par les défis que même la magie d'Ahri doit surmonter.
+/// Represents all errors that can occur within the authentication crate.
 #[derive(Debug, Error)]
 pub enum AuthError {
     #[error("Invalid credentials provided.")]
@@ -22,14 +21,14 @@ pub enum AuthError {
     TokenRefreshError(String),
     #[error("Configuration error: {0}")]
     ConfigError(String),
-    #[error("Service indisponible: {0}")]
+    #[error("Service unavailable: {0}")]
     ServiceUnavailable(String),
     #[error("Feature not implemented yet: {0}")]
     NotImplemented(String),
     #[error("Invalid input data: {0}")]
     InvalidInput(String),
-    #[error("Mot de passe invalide: {0}")]
+    #[error("Invalid password: {0}")]
     InvalidPassword(String),
-    #[error("Erreur de vérification: {0}")]
+    #[error("Verification error: {0}")]
     VerificationError(String),
 }

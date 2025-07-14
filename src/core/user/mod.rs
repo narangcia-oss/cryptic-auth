@@ -1,7 +1,7 @@
-//! Ce module définit les structures de données pour les utilisateurs
-//! et les traits pour les opérations de persistance.
+//! This module defines data structures for users
+//! and traits for persistence operations.
 
-use zeroize::{Zeroize, ZeroizeOnDrop}; // Importe le trait ZeroizeOnDrop
+use zeroize::{Zeroize, ZeroizeOnDrop}; // Imports the ZeroizeOnDrop trait
 
 #[derive(Debug, Clone, Default)]
 pub struct User {
@@ -9,16 +9,16 @@ pub struct User {
     pub credentials: Credentials,
 }
 
-/// Structure pour les credentials avec protection mémoire
+/// Structure for credentials with memory protection
 #[derive(Debug, Clone, Default)]
 pub struct Credentials {
     pub identifier: String,
-    /// Le mot de passe hashé - jamais en clair !
+    /// The hashed password - never in plaintext!
     pub password_hash: String,
 }
 
-/// Structure temporaire pour les mots de passe en clair
-/// Se nettoie automatiquement de la mémoire
+/// Temporary structure for plaintext passwords
+/// Automatically clears itself from memory
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct PlainPassword(String);
 
@@ -32,7 +32,7 @@ impl PlainPassword {
     }
 }
 
-/// Trait pour abstraire les opérations de persistance des utilisateurs.
+/// Trait to abstract user persistence operations.
 #[async_trait::async_trait]
 pub trait UserRepository {
     async fn find_by_identifier(
@@ -46,12 +46,12 @@ pub trait UserRepository {
 }
 
 impl User {
-    /// Crée un nouvel utilisateur avec des credentials déjà hashés
+    /// Creates a new user with already hashed credentials
     pub fn new(id: String, credentials: Credentials) -> Self {
         Self { id, credentials }
     }
 
-    /// Crée un utilisateur avec un mot de passe en clair (à hasher)
+    /// Creates a user with a plaintext password (to be hashed)
     pub async fn with_plain_password(
         id: String,
         identifier: String,
@@ -64,7 +64,7 @@ impl User {
 }
 
 impl Credentials {
-    /// Crée des credentials avec un hash déjà calculé
+    /// Creates credentials with an already calculated hash
     pub fn new(identifier: String, password_hash: String) -> Self {
         Self {
             identifier,
@@ -72,7 +72,7 @@ impl Credentials {
         }
     }
 
-    /// Crée des credentials en hashant un mot de passe en clair
+    /// Creates credentials by hashing a plaintext password
     pub async fn from_plain_password(
         identifier: String,
         plain_password: PlainPassword,
@@ -91,7 +91,7 @@ impl Credentials {
         })
     }
 
-    /// Vérifie un mot de passe contre le hash stocké
+    /// Verifies a password against the stored hash
     pub async fn verify_password(
         &self,
         plain_password: &PlainPassword,

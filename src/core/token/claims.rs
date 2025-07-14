@@ -1,9 +1,9 @@
-//! Définit les structures de revendications (claims) pour les tokens d'authentification.
+//! Defines the claims structures for authentication tokens.
 
 use chrono::{TimeZone, Utc, serde::ts_seconds};
 use serde::{Deserialize, Serialize};
 
-/// Trait commun pour toutes les revendications de token.
+/// Common trait for all token claims.
 pub trait Claims {
     fn expiration(&self) -> i64;
     fn set_expiration(&mut self, exp: i64);
@@ -11,7 +11,7 @@ pub trait Claims {
     fn set_issued_at(&mut self, iat: i64);
 }
 
-/// Revendications par défaut pour un token d'accès JWT.
+/// Default claims for a JWT access token.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessClaims {
     pub sub: String,        // Subject (user ID)

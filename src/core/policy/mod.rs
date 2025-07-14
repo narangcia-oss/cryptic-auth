@@ -1,9 +1,9 @@
-//! Ce module définit les politiques et règles de sécurité,
-//! comme les exigences de complexité des mots de passe.
+//! This module defines security policies and rules,
+//! such as password complexity requirements.
 
 use crate::error::AuthError;
 
-/// Définit les exigences pour un mot de passe fort.
+/// Defines the requirements for a strong password.
 pub struct PasswordPolicy {
     pub min_length: usize,
     pub require_uppercase: bool,
@@ -25,7 +25,7 @@ impl Default for PasswordPolicy {
 }
 
 impl PasswordPolicy {
-    /// Valide si un mot de passe respecte la politique définie.
+    /// Validates if a password meets the defined policy.
     pub fn validate_password(&self, password: &str) -> Result<(), AuthError> {
         if password.len() < self.min_length {
             return Err(AuthError::InvalidInput(format!(

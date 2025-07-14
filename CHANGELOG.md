@@ -2,7 +2,7 @@
 
 ## 0.1.0 - 2025-07-13
 
-### Ajouté
+### Added
 - Initial project setup with basic module structure (`user`, `password`, `token`, `policy`, `rbac`, `utils`).
 - Defined `AuthService` as the main entry point for authentication operations.
 - Implemented robust error handling with `thiserror` (`AuthError`).
@@ -12,17 +12,17 @@
 - Created placeholder files for integration tests, examples, and benchmarks.
 - Added foundational documentation files: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`.
 
-### Changé
+### Changed
 - N/A
 
-### Déprécié
+### Deprecated
 - N/A
 
-### Supprimé
+### Removed
 - N/A
 
-### Corrigé
+### Fixed
 - N/A
 
-### Sécurité
+### Security
 - N/A

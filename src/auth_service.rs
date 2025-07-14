@@ -1,35 +1,35 @@
-// src/auth_service.rs - Le Grand Orchestrateur des Opérations d'Authentification
+// src/auth_service.rs - The Grand Orchestrator of Authentication Operations
 
-//! Ce module contient la logique de haut niveau pour l'authentification des utilisateurs,
-//! agissant comme le point central des interactions de la crate.
+//! This module contains the high-level logic for user authentication,
+//! acting as the central point of the crate's interactions.
 
 use crate::error::AuthError;
 
-/// La structure principale du service d'authentification.
-/// Elle agrège les dépendances nécessaires pour effectuer les opérations.
+/// The main structure of the authentication service.
+/// It aggregates the necessary dependencies to perform operations.
 #[derive(Default, Debug)]
 pub struct AuthService {
-    // Exemple de champs qui pourraient être nécessaires
+    // Example fields that might be needed
     // user_repo: Box<dyn UserRepository + Send + Sync>,
     // password_hasher: Box<dyn PasswordHasher + Send + Sync>,
     // token_service: Box<dyn TokenService + Send + Sync>,
 }
 
 impl AuthService {
-    /// Crée une nouvelle instance de AuthService.
+    /// Creates a new instance of AuthService.
     pub fn new() -> Self {
         AuthService::default()
     }
 
-    /// Tente d'enregistrer un nouvel utilisateur.
+    /// Attempts to register a new user.
     pub async fn signup(&self) -> Result<(), AuthError> {
-        println!("Tentative d'inscription...");
+        println!("Attempting to sign up...");
         Err(AuthError::NotImplemented("signup".to_string()))
     }
 
-    /// Tente de connecter un utilisateur.
+    /// Attempts to log in a user.
     pub async fn login(&self) -> Result<(), AuthError> {
-        println!("Tentative de connexion...");
+        println!("Attempting to log in...");
         Err(AuthError::NotImplemented("login".to_string()))
     }
 }

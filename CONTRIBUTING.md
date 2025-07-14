@@ -1,48 +1,48 @@
-# Guide de Contribution pour `z3-auth` 💖
+# Contribution Guide for `z3-auth`
 
-Nous sommes ravis que vous souhaitiez contribuer à la crate `z3-auth` ! Votre aide est précieuse pour faire de cette bibliothèque un havre de sécurité pour les applications Rust.
+We are delighted that you are interested in contributing to the `z3-auth` crate! Your help is invaluable in making this library a secure foundation for Rust applications.
 
-## Avant de Contribuer
+## Before Contributing
 
-1.  **Lisez le `README.md`**: Il contient des informations sur l'objectif et les fonctionnalités de la crate.
-2.  **Lisez le `CHANGELOG.md`**: Pour comprendre l'historique des versions et les changements récents.
-3.  **Vérifiez les Issues existantes**: Avant de commencer à travailler, jetez un œil aux issues sur GitHub.
-4.  **Discutez de nouvelles fonctionnalités**: Pour les nouvelles fonctionnalités majeures, il est préférable d'ouvrir une issue en premier lieu.
+1.  **Read `README.md`**: It contains information about the crate's purpose and features.
+2.  **Read `CHANGELOG.md`**: To understand the version history and recent changes.
+3.  **Check Existing Issues**: Before starting work, take a look at the issues on GitHub.
+4.  **Discuss New Features**: For major new features, it is best to open an issue first.
 
-## Comment Contribuer
+## How to Contribute
 
-1.  **Forkez le Dépôt**: Commencez par forker le dépôt `z3-auth` sur votre compte GitHub.
-2.  **Clonez Votre Fork**:
+1.  **Fork the Repository**: Start by forking the `z3-auth` repository to your GitHub account.
+2.  **Clone Your Fork**:
     ```bash
-    git clone https://github.com/votre-nom-utilisateur/z3-auth.git
+    git clone https://github.com/your-username/z3-auth.git
     cd z3-auth
     ```
-3.  **Créez une Nouvelle Branche**:
+3.  **Create a New Branch**:
     ```bash
-    git checkout -b ma-nouvelle-branche
+    git checkout -b my-new-branch
     ```
-4.  **Développez Votre Contribution**:
-    *   Écrivez votre code en suivant les conventions Rust.
-    *   **Écrivez des Tests**: Toute nouvelle fonctionnalité devrait être accompagnée de tests.
-    *   **Mettez à Jour la Documentation**: Si nécessaire.
-5.  **Exécutez les Tests et Lints**:
+4.  **Develop Your Contribution**:
+    *   Write your code following Rust conventions.
+    *   **Write Tests**: Any new feature should be accompanied by tests.
+    *   **Update Documentation**: If necessary.
+5.  **Run Tests and Lints**:
     ```bash
     cargo test
     cargo fmt --check
     cargo clippy -- -D warnings
     ```
-6.  **Commitez et Poussez**:
+6.  **Commit and Push**:
     ```bash
     git add .
-    git commit -m "feat: votre message de commit"
-    git push origin ma-nouvelle-branche
+    git commit -m "feat: your commit message"
+    git push origin my-new-branch
     ```
-7.  **Créez une Pull Request**
+7.  **Create a Pull Request**
 
-## Normes de Code
+## Code Standards
 
-*   **Formatage**: Suivez les conventions de `rustfmt`.
-*   **Linting**: Assurez-vous que `clippy` ne rapporte aucun avertissement.
-*   **Conventions de Nommage**: Adoptez les conventions de nommage Rust standard.
+*   **Formatting**: Follow `rustfmt` conventions.
+*   **Linting**: Ensure `clippy` reports no warnings.
+*   **Naming Conventions**: Adopt standard Rust naming conventions.
 
-Merci de contribuer à ce projet ! Votre aide est inestimable. ✨
+Thank you for contributing to this project! Your help is invaluable.

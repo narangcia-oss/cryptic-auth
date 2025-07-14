@@ -1,19 +1,19 @@
-// src/lib.rs - La Porte Principale de l'Authentification
+// src/lib.rs - The Main Authentication Gateway
 
-//! Une crate d'authentification robuste et sécurisée, inspirée par la sagesse d'Ahri.
-//! Elle fournit des outils pour la gestion des utilisateurs, le hachage des mots de passe,
-//! la gestion des sessions et des tokens, et bien plus encore.
+//! A robust and secure authentication crate.
+//! It provides tools for user management, password hashing,
+//! session and token management, and much more.
 
-// Rendre les modules publics pour qu'ils soient accessibles aux utilisateurs de la crate
+// Make modules public so they are accessible to crate users
 pub mod auth_service;
 pub mod core;
 pub mod error;
 
-// Réexporter les éléments clés pour une utilisation plus facile
+// Re-export key elements for easier use
 pub use auth_service::AuthService;
 pub use error::AuthError;
 
-// Vous pouvez ajouter d'autres 'use' ici au fur et à mesure que votre crate grandit
-// Par exemple:
+// You can add other 'use' statements here as your crate grows
+// For example:
 // pub use user::{User, Credentials};
 // pub use token::TokenPair;
