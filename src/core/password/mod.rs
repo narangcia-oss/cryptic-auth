@@ -1,11 +1,11 @@
 //! Ce module gère le hachage et la vérification sécurisée des mots de passe.
 
 use crate::error::AuthError;
+pub mod salt;
 use argon2::{
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier},
 };
-use rand::rngs::OsRng;
 
 #[async_trait::async_trait]
 pub trait SecurePasswordManager {
@@ -44,14 +44,21 @@ impl SecurePasswordManager for Argon2PasswordManager {
                 "Le mot de passe ne peut pas être vide".to_string(),
             ));
         }
-        let mut bytes = [0u8; Salt::RECOMMENDED_LENGTH];
-        OsRng.try_fill_bytes(&mut bytes).unwrap();
-        let salt = SaltString::encode_b64(&bytes).unwrap();
+
+        let salt = match salt::generate_secure_salt() {
+            Ok(salt) => salt,
+            Err(e) => {
+                log::error!("Erreur lors de la génération du salt : {e}");
+                return Err(AuthError::HashingError(format!(
+                    "Erreur lors de la génération du salt: {e}",
+                )));
+            }
+        };
 
         let password_hash = self
             .hasher
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| AuthError::HashingError(format!("Erreur lors du hachage: {}", e)))?;
+            .map_err(|e| AuthError::HashingError(format!("Erreur lors du hachage: {e}")))?;
 
         Ok(password_hash.to_string())
     }
@@ -66,7 +73,7 @@ impl SecurePasswordManager for Argon2PasswordManager {
         }
 
         let parsed_hash = PasswordHash::new(hashed_password)
-            .map_err(|e| AuthError::VerificationError(format!("Hash invalide: {}", e)))?;
+            .map_err(|e| AuthError::VerificationError(format!("Hash invalide: {e}")))?;
 
         match self
             .hasher
@@ -75,8 +82,7 @@ impl SecurePasswordManager for Argon2PasswordManager {
             Ok(()) => Ok(true),
             Err(argon2::password_hash::Error::Password) => Ok(false),
             Err(e) => Err(AuthError::VerificationError(format!(
-                "Erreur lors de la vérification: {}",
-                e
+                "Erreur lors de la vérification: {e}",
             ))),
         }
     }

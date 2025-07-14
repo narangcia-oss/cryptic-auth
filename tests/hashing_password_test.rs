@@ -1,3 +1,5 @@
+use z3_auth::core::password::SecurePasswordManager;
+
 #[tokio::test]
 async fn test_password_hashing_and_verification() {
     let manager = z3_auth::core::password::Argon2PasswordManager::new();
