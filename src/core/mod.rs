@@ -1,3 +1,4 @@
+pub mod credentials;
 pub mod password;
 pub mod policy;
 pub mod token;

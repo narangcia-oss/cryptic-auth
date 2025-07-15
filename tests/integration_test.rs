@@ -5,10 +5,10 @@ async fn test_auth_service_signup_not_implemented() {
     let password_manager = Box::new(z3_auth::core::password::Argon2PasswordManager::new());
     let user_repo = Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new());
 
-    let credentials = z3_auth::core::user::Credentials::from_plain_password(
+    let credentials = z3_auth::core::credentials::Credentials::from_plain_password(
         password_manager.as_ref(),
         "test_user".to_string(),
-        z3_auth::core::user::PlainPassword::new("plain_password".to_string()),
+        z3_auth::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
     .await;
 
@@ -28,10 +28,10 @@ async fn test_auth_service_login_success() {
     let user_repo = Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new());
 
     // Create a user first
-    let credentials = z3_auth::core::user::Credentials::from_plain_password(
+    let credentials = z3_auth::core::credentials::Credentials::from_plain_password(
         password_manager.as_ref(),
         "test_user".to_string(),
-        z3_auth::core::user::PlainPassword::new("plain_password".to_string()),
+        z3_auth::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
     .await;
 
