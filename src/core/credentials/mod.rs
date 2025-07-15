@@ -26,12 +26,12 @@ impl Credentials {
         identifier: String,
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
-        let password_hash =
-            crate::core::password::SecurePasswordManager::hash_password(manager, plain_password.as_str())
-                .await
-                .map_err(|e| {
-                    crate::error::AuthError::HashingError(format!("Couldn't hash : {e}"))
-                })?;
+        let password_hash = crate::core::password::SecurePasswordManager::hash_password(
+            manager,
+            plain_password.as_str(),
+        )
+        .await
+        .map_err(|e| crate::error::AuthError::HashingError(format!("Couldn't hash : {e}")))?;
 
         Ok(Self {
             identifier,
