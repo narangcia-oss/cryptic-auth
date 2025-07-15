@@ -1,5 +1,3 @@
-// src/auth_service.rs - The Grand Orchestrator of Authentication Operations
-
 //! This module contains the high-level logic for user authentication,
 //! acting as the central point of the crate's interactions.
 
