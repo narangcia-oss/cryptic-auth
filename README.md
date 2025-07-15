@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Example signup attempt
     match auth_service.signup().await {
-        Ok(_) => println!("User registered successfully!"),
+        Ok(hashed_password) => println!("Hashed password: {}", hashed_password),
         Err(e) => eprintln!("Error during signup: {}", e),
     }
 
