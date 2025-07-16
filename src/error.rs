@@ -1,5 +1,3 @@
-// src/error.rs - The Mirror of Secure Failures
-
 use thiserror::Error;
 
 /// Represents all errors that can occur within the authentication crate.

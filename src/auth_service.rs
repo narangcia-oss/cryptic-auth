@@ -40,7 +40,7 @@ impl Z3AuthService {
     }
 
     /// Attempts to log in a user by verifying their credentials.
-    /// Returns Ok(()) if login is successful, or an error if authentication fails.
+    /// Returns a user if login is successful, or an error if authentication fails.
     pub async fn login_with_credentials(
         &self,
         identifier: &str,
