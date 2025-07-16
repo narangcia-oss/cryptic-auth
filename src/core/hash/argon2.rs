@@ -1,6 +1,8 @@
 use argon2::{
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, Error as PasswordHashError},
+    password_hash::{
+        Error as PasswordHashError, PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
+    },
 };
 
 #[derive(Default)]
@@ -16,7 +18,11 @@ impl Argon2Hasher {
     }
 
     /// Hash arbitrary data with a provided salt (or generate one if None)
-    pub fn hash(&self, data: &[u8], salt: Option<&SaltString>) -> Result<String, PasswordHashError> {
+    pub fn hash(
+        &self,
+        data: &[u8],
+        salt: Option<&SaltString>,
+    ) -> Result<String, PasswordHashError> {
         let salt = match salt {
             Some(s) => s.clone(),
             None => crate::core::hash::salt::generate_secure_salt()?,

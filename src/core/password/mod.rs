@@ -1,7 +1,7 @@
 //! This module manages secure password hashing and verification.
 
-pub mod manager;
 pub mod argon2;
+pub mod manager;
 
-pub use manager::SecurePasswordManager;
 pub use argon2::Argon2PasswordManager;
+pub use manager::SecurePasswordManager;
