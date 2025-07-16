@@ -1,17 +1,10 @@
-use crate::core::hash::{Argon2Hasher, salt::generate_secure_salt};
+use crate::core::hash::Argon2Hasher;
 use crate::core::password::manager::SecurePasswordManager;
 use crate::error::AuthError;
 
+#[derive(Default)]
 pub struct Argon2PasswordManager {
     hasher: Argon2Hasher,
-}
-
-impl Argon2PasswordManager {
-    pub fn new() -> Self {
-        Self {
-            hasher: Argon2Hasher::new(),
-        }
-    }
 }
 
 #[async_trait::async_trait]

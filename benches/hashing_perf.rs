@@ -2,12 +2,12 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use z3_auth::core::hash::Argon2PasswordManager;
+use z3_auth::core::password::Argon2PasswordManager;
 use z3_auth::core::password::SecurePasswordManager;
 
 /// Benchmark pour la performance du hachage de mot de passe.
 fn bench_password_hashing(c: &mut Criterion) {
-    let password_manager = Argon2PasswordManager::new();
+    let password_manager = Argon2PasswordManager::default();
     let password = "my_super_secret_password_123!";
 
     c.bench_function("argon2_password_hashing", |b| {
@@ -33,7 +33,7 @@ fn bench_argon2_configurations(c: &mut Criterion) {
     for (name, _iterations, _memory, _parallelism) in configs {
         // Note: Since your current Argon2PasswordManager doesn't expose configuration,
         // we'll benchmark the default implementation for each scenario
-        let password_manager = Argon2PasswordManager::new();
+        let password_manager = Argon2PasswordManager::default();
 
         c.bench_function(&format!("argon2_config_{name}"), |b| {
             b.to_async(tokio::runtime::Runtime::new().unwrap())
@@ -50,7 +50,7 @@ fn bench_argon2_configurations(c: &mut Criterion) {
 /// Benchmark pour la performance de la vérification de mot de passe.
 fn bench_password_verification(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let password_manager = Argon2PasswordManager::new();
+    let password_manager = Argon2PasswordManager::default();
     let password = "my_super_secret_password_123!";
 
     // Pré-générer le hash pour les benchmarks de vérification
@@ -70,7 +70,7 @@ fn bench_password_verification(c: &mut Criterion) {
 
 /// Benchmark pour différentes longueurs de mots de passe.
 fn bench_password_lengths(c: &mut Criterion) {
-    let password_manager = Argon2PasswordManager::new();
+    let password_manager = Argon2PasswordManager::default();
     let passwords = vec![
         ("short", "abc123"),
         ("medium", "my_super_secret_password_123!"),
@@ -96,7 +96,7 @@ fn bench_password_lengths(c: &mut Criterion) {
 /// Benchmark pour la vérification avec mot de passe incorrect.
 fn bench_password_verification_failure(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let password_manager = Argon2PasswordManager::new();
+    let password_manager = Argon2PasswordManager::default();
     let correct_password = "correct_password_123!";
     let wrong_password = "wrong_password_456!";
 

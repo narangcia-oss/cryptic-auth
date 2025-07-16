@@ -2,7 +2,7 @@ use z3_auth::Z3AuthService;
 
 #[tokio::test]
 async fn test_auth_service_signup_not_implemented() {
-    let password_manager = Box::new(z3_auth::core::password::Argon2PasswordManager::new());
+    let password_manager = Box::new(z3_auth::core::password::Argon2PasswordManager::default());
     let user_repo = Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new());
 
     let credentials = z3_auth::core::credentials::Credentials::from_plain_password(
@@ -24,7 +24,7 @@ async fn test_auth_service_signup_not_implemented() {
 
 #[tokio::test]
 async fn test_auth_service_login_success() {
-    let password_manager = Box::new(z3_auth::core::password::Argon2PasswordManager::new());
+    let password_manager = Box::new(z3_auth::core::password::Argon2PasswordManager::default());
     let user_repo = Box::new(z3_auth::core::user::persistence::InMemoryUserRepo::new());
 
     // Create a user first
@@ -56,7 +56,7 @@ async fn test_auth_service_login_success() {
 async fn test_auth_service_login_invalid_credentials() {
     let auth_service = z3_auth::Z3AuthService::new(
         Some(Box::new(
-            z3_auth::core::password::Argon2PasswordManager::new(),
+            z3_auth::core::password::Argon2PasswordManager::default(),
         )),
         Some(Box::new(
             z3_auth::core::user::persistence::InMemoryUserRepo::new(),

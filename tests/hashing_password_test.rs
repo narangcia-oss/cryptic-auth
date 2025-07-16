@@ -3,7 +3,7 @@ use z3_auth::core::password::SecurePasswordManager;
 
 #[tokio::test]
 async fn test_password_hashing_and_verification() {
-    let manager = Argon2PasswordManager::new();
+    let manager = Argon2PasswordManager::default();
     let password = "mon_super_mot_de_passe_sécurisé";
 
     // Test du hachage
@@ -25,7 +25,7 @@ async fn test_password_hashing_and_verification() {
 
 #[tokio::test]
 async fn test_empty_password() {
-    let manager = Argon2PasswordManager::new();
+    let manager = Argon2PasswordManager::default();
 
     // Test avec mot de passe vide
     let result = manager.hash_password("").await;
