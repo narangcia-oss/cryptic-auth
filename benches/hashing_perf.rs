@@ -2,7 +2,8 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
-use z3_auth::core::password::{Argon2PasswordManager, SecurePasswordManager};
+use z3_auth::core::hash::Argon2PasswordManager;
+use z3_auth::core::password::SecurePasswordManager;
 
 /// Benchmark pour la performance du hachage de mot de passe.
 fn bench_password_hashing(c: &mut Criterion) {
