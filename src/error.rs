@@ -5,6 +5,8 @@ use thiserror::Error;
 pub enum AuthError {
     #[error("Invalid credentials provided.")]
     InvalidCredentials,
+    #[error("User not found.")]
+    UserNotFound,
     #[error("User already exists.")]
     UserAlreadyExists,
     #[error("Password hashing failed: {0}")]

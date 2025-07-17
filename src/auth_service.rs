@@ -83,7 +83,56 @@ impl AuthService {
         }
     }
 
+    /// Generates a new token pair for a given user ID.
     pub async fn get_tokens(&self, id: String) -> Result<crate::core::token::TokenPair, AuthError> {
         self.token_manager.generate_token_pair(&id).await
+    }
+
+    /// Validates an access token and returns the claims.
+    pub async fn validate_access_token(
+        &self,
+        token: &str,
+    ) -> Result<Box<dyn crate::core::token::claims::Claims + Send + Sync>, AuthError> {
+        self.token_manager.validate_access_token(token).await
+    }
+
+    /// Refreshes an access token using a refresh token.
+    pub async fn refresh_access_token(
+        &self,
+        refresh_token: &str,
+    ) -> Result<crate::core::token::TokenPair, AuthError> {
+        self.token_manager.refresh_access_token(refresh_token).await
+    }
+
+    /// Validates a token and extracts the user ID from it.
+    pub async fn get_user_id_from_token(&self, token: &str) -> Result<String, AuthError> {
+        let claims = self.validate_access_token(token).await?;
+        Ok(claims.get_subject().to_string())
+    }
+
+    /// Checks if a token is expired by validating it.
+    pub async fn is_token_expired(&self, token: &str) -> bool {
+        self.validate_access_token(token).await.is_err()
+    }
+
+    /// Complete login flow that returns both user and tokens.
+    pub async fn login_with_credentials_and_tokens(
+        &self,
+        identifier: &str,
+        plain_password: &str,
+    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
+        let user = self
+            .login_with_credentials(identifier, plain_password)
+            .await?;
+        let tokens = self.get_tokens(user.id.clone()).await?;
+        Ok((user, tokens))
+    }
+
+    /// Validates a token and retrieves the associated user.
+    pub async fn get_user_from_token(&self, token: &str) -> Result<User, AuthError> {
+        let user_id = self.get_user_id_from_token(token).await?;
+        self.persistent_users_manager
+            .get_user_by_id(&user_id)
+            .ok_or(AuthError::UserNotFound)
     }
 }
