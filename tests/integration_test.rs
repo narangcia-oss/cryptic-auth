@@ -2,11 +2,10 @@ use cryptic::AuthService;
 
 #[tokio::test]
 async fn test_auth_service_signup_not_implemented() {
-    let password_manager = Box::new(cryptic::core::password::Argon2PasswordManager::default());
-    let user_repo = Box::new(cryptic::core::user::persistence::InMemoryUserRepo::new());
+    let auth_service = AuthService::default();
 
     let credentials = cryptic::core::credentials::Credentials::from_plain_password(
-        password_manager.as_ref(),
+        auth_service.password_manager.as_ref(),
         "test_user".to_string(),
         cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
@@ -15,21 +14,17 @@ async fn test_auth_service_signup_not_implemented() {
     let credentials = credentials.expect("Failed to create credentials");
     let user = cryptic::core::user::User::new("test_user".to_string(), credentials);
 
-    let auth_service = AuthService::new(Some(password_manager), Some(user_repo))
-        .expect("Failed to create auth service");
-
     let result = auth_service.signup(user).await;
     assert!(result.is_ok());
 }
 
 #[tokio::test]
 async fn test_auth_service_login_success() {
-    let password_manager = Box::new(cryptic::core::password::Argon2PasswordManager::default());
-    let user_repo = Box::new(cryptic::core::user::persistence::InMemoryUserRepo::new());
-
     // Create a user first
+    let auth_service = AuthService::default();
+
     let credentials = cryptic::core::credentials::Credentials::from_plain_password(
-        password_manager.as_ref(),
+        auth_service.password_manager.as_ref(),
         "test_user".to_string(),
         cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
@@ -38,8 +33,7 @@ async fn test_auth_service_login_success() {
     let credentials = credentials.expect("Failed to create credentials");
     let user = cryptic::core::user::User::new("test_user_id".to_string(), credentials);
 
-    let auth_service = cryptic::AuthService::new(Some(password_manager), Some(user_repo))
-        .expect("Failed to create auth service");
+    let auth_service = cryptic::AuthService::default();
 
     // Sign up the user first
     let signup_result = auth_service.signup(user).await;
@@ -54,15 +48,7 @@ async fn test_auth_service_login_success() {
 
 #[tokio::test]
 async fn test_auth_service_login_invalid_credentials() {
-    let auth_service = cryptic::AuthService::new(
-        Some(Box::new(
-            cryptic::core::password::Argon2PasswordManager::default(),
-        )),
-        Some(Box::new(
-            cryptic::core::user::persistence::InMemoryUserRepo::new(),
-        )),
-    )
-    .expect("Failed to create auth service");
+    let auth_service = cryptic::AuthService::default();
 
     let result = auth_service
         .login_with_credentials("nonexistent_user", "wrong_password")

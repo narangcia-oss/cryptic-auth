@@ -17,7 +17,7 @@ impl User {
 
     /// Creates a user with a plaintext password (to be hashed)
     pub async fn with_plain_password(
-        manager: &crate::core::password::Argon2PasswordManager,
+        manager: &(dyn crate::core::password::SecurePasswordManager + Send + Sync),
         id: String,
         identifier: String,
         plain_password: PlainPassword,

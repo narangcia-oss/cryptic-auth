@@ -6,8 +6,24 @@ use crate::{core::user::User, error::AuthError};
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
 pub struct AuthService {
-    password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
-    persistent_users_manager: Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
+    pub password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
+    pub persistent_users_manager:
+        Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
+    pub token_manager: Box<dyn crate::core::token::TokenService + Send + Sync>,
+}
+
+impl Default for AuthService {
+    fn default() -> Self {
+        Self {
+            password_manager: Box::new(crate::core::password::Argon2PasswordManager::default()),
+            persistent_users_manager: Box::new(
+                crate::core::user::persistence::InMemoryUserRepo::new(),
+            ),
+            token_manager: Box::new(crate::core::token::jwt::JwtTokenService::new(
+                "e", 5000, 5000,
+            )),
+        }
+    }
 }
 
 impl AuthService {
@@ -18,13 +34,16 @@ impl AuthService {
         persistent_users_manager: Option<
             Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
         >,
+        token_manager: Option<Box<dyn crate::core::token::TokenService + Send + Sync>>,
     ) -> Result<Self, AuthError> {
         let pwd_manager = password_manager.ok_or(AuthError::MissingPasswordManager)?;
         let pum = persistent_users_manager.ok_or(AuthError::MissingPersistentUserManager)?;
+        let tk_manager = token_manager.ok_or(AuthError::MissingTokenManager)?;
 
         Ok(AuthService {
             password_manager: pwd_manager,
             persistent_users_manager: pum,
+            token_manager: tk_manager,
         })
     }
 

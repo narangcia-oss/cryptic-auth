@@ -35,4 +35,6 @@ pub enum AuthError {
     MissingPasswordManager,
     #[error("MissingPersistentUserManager")]
     MissingPersistentUserManager,
+    #[error("MissingTokenManager")]
+    MissingTokenManager,
 }
