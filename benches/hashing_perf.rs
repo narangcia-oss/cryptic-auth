@@ -1,8 +1,8 @@
 //! Ce fichier contient les benchmarks pour mesurer les performances des fonctions critiques.
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use cryptic::core::password::Argon2PasswordManager;
-use cryptic::core::password::SecurePasswordManager;
+use narangcia_cryptic::core::password::Argon2PasswordManager;
+use narangcia_cryptic::core::password::SecurePasswordManager;
 use std::hint::black_box;
 
 /// Benchmark pour la performance du hachage de mot de passe.

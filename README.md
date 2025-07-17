@@ -4,10 +4,10 @@ A robust and secure Rust crate for authentication, meticulously designed to prov
 
 ## Features (Upcoming)
 
-*   **Secure Password Hashing**: Utilizes modern algorithms like Argon2.
-*   **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
-*   **Robust and Secure Error Handling**.
-*   **Asynchronous API**: Built on `async/await` for optimal performance.
+* **Secure Password Hashing**: Utilizes modern algorithms like Argon2.
+* **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
+* **Robust and Secure Error Handling**.
+* **Asynchronous API**: Built on `async/await` for optimal performance.
 
 ## Quick Start
 
@@ -15,15 +15,15 @@ Add this line to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cryptic = "0.1.0"
+narangcia-cryptic = "0.1.0"
 ```
 
 ## Development
 
 ### Prerequisites
 
-*   Rust stable (2021 edition or newer)
-*   Cargo (installed with Rust)
+* Rust stable (2021 edition or newer)
+* Cargo (installed with Rust)
 
 ### Running Tests
 

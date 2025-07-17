@@ -1,18 +1,18 @@
-use cryptic::AuthService;
+use narangcia_cryptic::AuthService;
 
 #[tokio::test]
 async fn test_auth_service_signup_not_implemented() {
     let auth_service = AuthService::default();
 
-    let credentials = cryptic::core::credentials::Credentials::from_plain_password(
+    let credentials = narangcia_cryptic::core::credentials::Credentials::from_plain_password(
         auth_service.password_manager.as_ref(),
         "test_user".to_string(),
-        cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
+        narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
     .await;
 
     let credentials = credentials.expect("Failed to create credentials");
-    let user = cryptic::core::user::User::new("test_user".to_string(), credentials);
+    let user = narangcia_cryptic::core::user::User::new("test_user".to_string(), credentials);
 
     let result = auth_service.signup(user).await;
     assert!(result.is_ok());
@@ -21,19 +21,19 @@ async fn test_auth_service_signup_not_implemented() {
 #[tokio::test]
 async fn test_auth_service_login_success() {
     // Create a user first
-    let auth_service = AuthService::default();
+    let auth_service = narangcia_cryptic::AuthService::default();
 
-    let credentials = cryptic::core::credentials::Credentials::from_plain_password(
+    let credentials = narangcia_cryptic::core::credentials::Credentials::from_plain_password(
         auth_service.password_manager.as_ref(),
         "test_user".to_string(),
-        cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
+        narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
     .await;
 
     let credentials = credentials.expect("Failed to create credentials");
-    let user = cryptic::core::user::User::new("test_user_id".to_string(), credentials);
+    let user = narangcia_cryptic::core::user::User::new("test_user_id".to_string(), credentials);
 
-    let auth_service = cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic::AuthService::default();
 
     // Sign up the user first
     let signup_result = auth_service.signup(user).await;
@@ -48,7 +48,7 @@ async fn test_auth_service_login_success() {
 
 #[tokio::test]
 async fn test_auth_service_login_invalid_credentials() {
-    let auth_service = cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic::AuthService::default();
 
     let result = auth_service
         .login_with_credentials("nonexistent_user", "wrong_password")

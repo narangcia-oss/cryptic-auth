@@ -1,5 +1,5 @@
-use cryptic::core::password::Argon2PasswordManager;
-use cryptic::core::password::SecurePasswordManager;
+use narangcia_cryptic::core::password::Argon2PasswordManager;
+use narangcia_cryptic::core::password::SecurePasswordManager;
 
 #[tokio::test]
 async fn test_password_hashing_and_verification() {

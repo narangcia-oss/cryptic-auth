@@ -1,5 +1,5 @@
 [package]
-name = "cryptic"
+name = "narangcia-cryptic"
 version = "0.1.0"
 edition = "2024"
 description = "A robust, modular, high-level, and secure authentication crate for Rust."
