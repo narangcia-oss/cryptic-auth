@@ -12,7 +12,6 @@ keywords = [
   "security",
   "jwt",
   "argon2",
-  "rust",
 ]
 categories = ["authentication", "cryptography", "web-programming"]
 
