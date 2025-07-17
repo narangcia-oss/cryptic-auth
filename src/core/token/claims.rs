@@ -1,39 +1,47 @@
 //! Defines the claims structures for authentication tokens.
 
-use chrono::{TimeZone, Utc, serde::ts_seconds};
 use serde::{Deserialize, Serialize};
 
-/// Common trait for all token claims.
+/// Trait pour tous les types de claims
 pub trait Claims {
-    fn expiration(&self) -> i64;
-    fn set_expiration(&mut self, exp: i64);
-    fn issued_at(&self) -> i64;
-    fn set_issued_at(&mut self, iat: i64);
+    fn get_subject(&self) -> &str;
+    fn get_expiration(&self) -> usize;
 }
 
-/// Default claims for a JWT access token.
+/// Claims pour les access tokens
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AccessClaims {
-    pub sub: String, // Subject (user ID)
-    #[serde(with = "ts_seconds")]
-    pub exp: chrono::DateTime<Utc>, // Expiration timestamp
-    #[serde(with = "ts_seconds")]
-    pub iat: chrono::DateTime<Utc>, // Issued at timestamp
-    pub aud: Option<String>, // Audience
-    pub iss: Option<String>, // Issuer
+pub struct AccessTokenClaims {
+    pub sub: String,        // user_id
+    pub exp: usize,         // expiration timestamp
+    pub iat: usize,         // issued at timestamp
+    pub token_type: String, // "access"
 }
 
-impl Claims for AccessClaims {
-    fn expiration(&self) -> i64 {
-        self.exp.timestamp()
+impl Claims for AccessTokenClaims {
+    fn get_subject(&self) -> &str {
+        &self.sub
     }
-    fn set_expiration(&mut self, exp: i64) {
-        self.exp = Utc.timestamp_opt(exp, 0).unwrap();
+
+    fn get_expiration(&self) -> usize {
+        self.exp
     }
-    fn issued_at(&self) -> i64 {
-        self.iat.timestamp()
+}
+
+/// Claims pour les refresh tokens
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshTokenClaims {
+    pub sub: String,        // user_id
+    pub exp: usize,         // expiration timestamp
+    pub iat: usize,         // issued at timestamp
+    pub token_type: String, // "refresh"
+}
+
+impl Claims for RefreshTokenClaims {
+    fn get_subject(&self) -> &str {
+        &self.sub
     }
-    fn set_issued_at(&mut self, iat: i64) {
-        self.iat = Utc.timestamp_opt(iat, 0).unwrap();
+
+    fn get_expiration(&self) -> usize {
+        self.exp
     }
 }

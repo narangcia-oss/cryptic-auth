@@ -13,11 +13,7 @@ pub struct TokenPair {
 #[async_trait::async_trait]
 pub trait TokenService {
     /// Generates a new token pair for a given user.
-    async fn generate_token_pair(
-        &self,
-        user_id: &str,
-        user_roles: &[String],
-    ) -> Result<TokenPair, AuthError>;
+    async fn generate_token_pair(&self, user_id: &str) -> Result<TokenPair, AuthError>;
     /// Validates an access token and extracts its claims.
     async fn validate_access_token<
         C: serde::de::DeserializeOwned + crate::core::token::claims::Claims + Send,

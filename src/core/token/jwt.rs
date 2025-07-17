@@ -36,17 +36,12 @@ impl JwtTokenService {
     }
 
     /// Génère un access token
-    fn generate_access_token(
-        &self,
-        user_id: &str,
-        user_roles: &[String],
-    ) -> Result<String, AuthError> {
+    fn generate_access_token(&self, user_id: &str) -> Result<String, AuthError> {
         let now = Self::current_timestamp()?;
         let expiration = now + self.access_token_duration as usize;
 
         let claims = AccessTokenClaims {
             sub: user_id.to_string(),
-            roles: user_roles.to_vec(),
             exp: expiration,
             iat: now,
             token_type: "access".to_string(),
@@ -103,12 +98,8 @@ impl JwtTokenService {
 #[async_trait::async_trait]
 impl TokenService for JwtTokenService {
     /// Génère une paire de tokens
-    async fn generate_token_pair(
-        &self,
-        user_id: &str,
-        user_roles: &[String],
-    ) -> Result<TokenPair, AuthError> {
-        let access_token = self.generate_access_token(user_id, user_roles)?;
+    async fn generate_token_pair(&self, user_id: &str) -> Result<TokenPair, AuthError> {
+        let access_token = self.generate_access_token(user_id)?;
         let refresh_token = self.generate_refresh_token(user_id)?;
 
         Ok(TokenPair {
@@ -137,13 +128,7 @@ impl TokenService for JwtTokenService {
             ));
         }
 
-        // Ici, tu devrais normalement récupérer les rôles de l'utilisateur
-        // depuis ta base de données. Pour l'exemple, on va utiliser des rôles vides.
-        // Ahri-approved™ : Intègre ici un appel à ton service utilisateur
-        let user_roles = vec!["user".to_string()]; // À remplacer par la vraie logique
-
         // Génère une nouvelle paire de tokens
-        self.generate_token_pair(&refresh_claims.sub, &user_roles)
-            .await
+        self.generate_token_pair(&refresh_claims.sub).await
     }
 }
