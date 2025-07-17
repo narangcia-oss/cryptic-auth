@@ -1,11 +1,14 @@
 //! This module contains the high-level logic for user authentication,
 //! acting as the central point of the crate's interactions.
 
+use std::sync::Arc;
+
 use crate::{core::user::User, error::AuthError};
 
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
 pub struct AuthService {
+    pub vars: Arc<crate::core::vars::AuthServiceVariables>,
     pub password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
     pub persistent_users_manager:
         Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
@@ -15,6 +18,7 @@ pub struct AuthService {
 impl Default for AuthService {
     fn default() -> Self {
         Self {
+            vars: Arc::new(crate::core::vars::AuthServiceVariables::default()),
             password_manager: Box::new(crate::core::password::Argon2PasswordManager::default()),
             persistent_users_manager: Box::new(
                 crate::core::user::persistence::InMemoryUserRepo::new(),
@@ -28,6 +32,7 @@ impl Default for AuthService {
 
 impl AuthService {
     pub fn new(
+        vars: Arc<crate::core::vars::AuthServiceVariables>,
         password_manager: Option<
             Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
         >,
@@ -41,6 +46,7 @@ impl AuthService {
         let tk_manager = token_manager.ok_or(AuthError::MissingTokenManager)?;
 
         Ok(AuthService {
+            vars,
             password_manager: pwd_manager,
             persistent_users_manager: pum,
             token_manager: tk_manager,
