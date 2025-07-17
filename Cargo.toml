@@ -5,14 +5,8 @@ edition = "2024"
 description = "A robust, modular, high-level, and secure authentication crate for Rust."
 license = "Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/zy-35/z3-auth"
-keywords = [
-  "auth",
-  "authentication",
-  "security",
-  "jwt",
-  "argon2",
-]
+repository = "https://github.com/narangcia/cryptic"
+keywords = ["auth", "authentication", "security", "jwt", "argon2"]
 categories = ["authentication", "cryptography", "web-programming"]
 
 [lib]

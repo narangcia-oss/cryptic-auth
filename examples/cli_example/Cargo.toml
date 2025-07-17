@@ -1,0 +1,4 @@
+# Pour l'interface CLI dans les exemples
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+narangcia-cryptic = { path = "../narangcia-cryptic" }
