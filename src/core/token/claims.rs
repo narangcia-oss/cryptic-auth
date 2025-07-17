@@ -14,8 +14,7 @@ pub trait Claims {
 /// Default claims for a JWT access token.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessClaims {
-    pub sub: String,        // Subject (user ID)
-    pub roles: Vec<String>, // User roles
+    pub sub: String, // Subject (user ID)
     #[serde(with = "ts_seconds")]
     pub exp: chrono::DateTime<Utc>, // Expiration timestamp
     #[serde(with = "ts_seconds")]
