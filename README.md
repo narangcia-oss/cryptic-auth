@@ -2,7 +2,7 @@
 
 A robust and secure Rust crate for authentication, meticulously designed to provide a solid foundation for your applications. This library aims to deliver reliable and easy-to-use authentication primitives.
 
-## Features (Upcoming)
+## Features
 
 * **Secure Password Hashing**: Utilizes modern algorithms like Argon2.
 * **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
