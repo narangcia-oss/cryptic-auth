@@ -3,17 +3,17 @@
 
 use crate::{
     core::user::User,
-    error::{AuthError, Z3AuthServiceError},
+    error::{AuthError, AuthServiceError},
 };
 
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
-pub struct Z3AuthService {
+pub struct AuthService {
     password_manager: Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
     persistent_users_manager: Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
 }
 
-impl Z3AuthService {
+impl AuthService {
     pub fn new(
         password_manager: Option<
             Box<dyn crate::core::password::SecurePasswordManager + Send + Sync>,
@@ -21,12 +21,11 @@ impl Z3AuthService {
         persistent_users_manager: Option<
             Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
         >,
-    ) -> Result<Self, Z3AuthServiceError> {
-        let pwd_manager = password_manager.ok_or(Z3AuthServiceError::MissingPasswordManager)?;
-        let pum =
-            persistent_users_manager.ok_or(Z3AuthServiceError::MissingPersistentUserManager)?;
+    ) -> Result<Self, AuthServiceError> {
+        let pwd_manager = password_manager.ok_or(AuthServiceError::MissingPasswordManager)?;
+        let pum = persistent_users_manager.ok_or(AuthServiceError::MissingPersistentUserManager)?;
 
-        Ok(Z3AuthService {
+        Ok(AuthService {
             password_manager: pwd_manager,
             persistent_users_manager: pum,
         })

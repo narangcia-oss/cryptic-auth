@@ -32,7 +32,7 @@ pub enum AuthError {
 }
 
 #[derive(Debug, Error)]
-pub enum Z3AuthServiceError {
+pub enum AuthServiceError {
     #[error("MissingPasswordManager")]
     MissingPasswordManager,
     #[error("MissingPersistentUserManager")]

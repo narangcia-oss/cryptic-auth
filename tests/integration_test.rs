@@ -1,4 +1,4 @@
-use cryptic::Z3AuthService;
+use cryptic::AuthService;
 
 #[tokio::test]
 async fn test_auth_service_signup_not_implemented() {
@@ -15,7 +15,7 @@ async fn test_auth_service_signup_not_implemented() {
     let credentials = credentials.expect("Failed to create credentials");
     let user = cryptic::core::user::User::new("test_user".to_string(), credentials);
 
-    let auth_service = Z3AuthService::new(Some(password_manager), Some(user_repo))
+    let auth_service = AuthService::new(Some(password_manager), Some(user_repo))
         .expect("Failed to create auth service");
 
     let result = auth_service.signup(user).await;
@@ -38,7 +38,7 @@ async fn test_auth_service_login_success() {
     let credentials = credentials.expect("Failed to create credentials");
     let user = cryptic::core::user::User::new("test_user_id".to_string(), credentials);
 
-    let auth_service = cryptic::Z3AuthService::new(Some(password_manager), Some(user_repo))
+    let auth_service = cryptic::AuthService::new(Some(password_manager), Some(user_repo))
         .expect("Failed to create auth service");
 
     // Sign up the user first
@@ -54,7 +54,7 @@ async fn test_auth_service_login_success() {
 
 #[tokio::test]
 async fn test_auth_service_login_invalid_credentials() {
-    let auth_service = cryptic::Z3AuthService::new(
+    let auth_service = cryptic::AuthService::new(
         Some(Box::new(
             cryptic::core::password::Argon2PasswordManager::default(),
         )),
