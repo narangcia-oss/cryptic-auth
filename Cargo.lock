@@ -337,6 +337,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
+name = "cryptic"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "chrono",
+ "criterion",
+ "env_logger",
+ "jsonwebtoken",
+ "log",
+ "rand",
+ "serde",
+ "thiserror",
+ "tokio",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "crypto-common"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1365,25 +1384,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "z3-auth"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "chrono",
- "criterion",
- "env_logger",
- "jsonwebtoken",
- "log",
- "rand",
- "serde",
- "thiserror",
- "tokio",
- "uuid",
- "zeroize",
 ]
 
 [[package]]

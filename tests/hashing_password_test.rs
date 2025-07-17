@@ -1,5 +1,5 @@
-use z3_auth::core::password::Argon2PasswordManager;
-use z3_auth::core::password::SecurePasswordManager;
+use cryptic::core::password::Argon2PasswordManager;
+use cryptic::core::password::SecurePasswordManager;
 
 #[tokio::test]
 async fn test_password_hashing_and_verification() {

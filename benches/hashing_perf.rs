@@ -1,9 +1,9 @@
 //! Ce fichier contient les benchmarks pour mesurer les performances des fonctions critiques.
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use cryptic::core::password::Argon2PasswordManager;
+use cryptic::core::password::SecurePasswordManager;
 use std::hint::black_box;
-use z3_auth::core::password::Argon2PasswordManager;
-use z3_auth::core::password::SecurePasswordManager;
 
 /// Benchmark pour la performance du hachage de mot de passe.
 fn bench_password_hashing(c: &mut Criterion) {
