@@ -33,10 +33,10 @@ pub enum AuthError {
     TokenValidation(String),
     #[error("InvalidToken: {0}")]
     InvalidToken(String),
-    #[error("MissingPasswordManager")]
+    #[error("Missing password manager")]
     MissingPasswordManager,
-    #[error("MissingPersistentUserManager")]
+    #[error("Missing persistent user manager")]
     MissingPersistentUserManager,
-    #[error("MissingTokenManager")]
+    #[error("Missing token manager")]
     MissingTokenManager,
 }
