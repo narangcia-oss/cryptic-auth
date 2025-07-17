@@ -4,17 +4,17 @@ use crate::error::AuthError;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Service de gestion des tokens JWT
+/// JWT Token Service implementation
 pub struct JwtTokenService {
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
     algorithm: Algorithm,
-    access_token_duration: u64,  // en secondes
-    refresh_token_duration: u64, // en secondes
+    access_token_duration: u64,  // in seconds
+    refresh_token_duration: u64, // in seconds
 }
 
 impl JwtTokenService {
-    /// Crée un nouveau service JWT avec une clé secrète
+    /// Creates a new JWT service with a secret key
     pub fn new(secret: &str, access_token_duration: u64, refresh_token_duration: u64) -> Self {
         let key_bytes = secret.as_bytes();
 
@@ -27,7 +27,7 @@ impl JwtTokenService {
         }
     }
 
-    /// Obtient le timestamp actuel
+    /// Gets the current timestamp
     fn current_timestamp() -> Result<usize, AuthError> {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -35,7 +35,7 @@ impl JwtTokenService {
             .map(|duration| duration.as_secs() as usize)
     }
 
-    /// Génère un access token
+    /// Generates an access token
     fn generate_access_token(&self, user_id: &str) -> Result<String, AuthError> {
         let now = Self::current_timestamp()?;
         let expiration = now + self.access_token_duration as usize;
@@ -53,7 +53,7 @@ impl JwtTokenService {
             .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode access token: {e}")))
     }
 
-    /// Génère un refresh token
+    /// Generates a refresh token
     fn generate_refresh_token(&self, user_id: &str) -> Result<String, AuthError> {
         let now = Self::current_timestamp()?;
         let expiration = now + self.refresh_token_duration as usize;
@@ -71,7 +71,7 @@ impl JwtTokenService {
             .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode refresh token: {e}")))
     }
 
-    /// Valide un token générique
+    /// Validates a generic token
     fn validate_token<T>(&self, token: &str) -> Result<T, AuthError>
     where
         T: serde::de::DeserializeOwned,
@@ -95,7 +95,7 @@ impl JwtTokenService {
 
 #[async_trait::async_trait]
 impl TokenService for JwtTokenService {
-    /// Génère une paire de tokens
+    /// Generates a token pair
     async fn generate_token_pair(&self, user_id: &str) -> Result<TokenPair, AuthError> {
         let access_token = self.generate_access_token(user_id)?;
         let refresh_token = self.generate_refresh_token(user_id)?;
@@ -106,17 +106,16 @@ impl TokenService for JwtTokenService {
         })
     }
 
-    /// Valide un access token - Avec la force d'Aoi Todo 💪
+    /// Validates an access token
     async fn validate_access_token(
         &self,
         token: &str,
     ) -> Result<Box<dyn Claims + Send + Sync>, AuthError> {
-        // Tu devras adapter cette ligne selon ton type de claims par défaut
         let claims: AccessTokenClaims = self.validate_token(token)?;
         Ok(Box::new(claims))
     }
 
-    /// Rafraîchit un access token - Régénération mystique 🌙
+    /// Refreshes an access token
     async fn refresh_access_token(&self, refresh_token: &str) -> Result<TokenPair, AuthError> {
         let refresh_claims: RefreshTokenClaims = self.validate_token(refresh_token)?;
 

@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Trait pour tous les types de claims
+/// Trait for all types of claims
 pub trait Claims {
     fn get_subject(&self) -> &str;
     fn get_expiration(&self) -> usize;
 }
 
-/// Claims pour les access tokens
+/// Claims for access tokens
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessTokenClaims {
     pub sub: String,        // user_id
@@ -27,7 +27,7 @@ impl Claims for AccessTokenClaims {
     }
 }
 
-/// Claims pour les refresh tokens
+/// Claims for refresh tokens
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RefreshTokenClaims {
     pub sub: String,        // user_id
