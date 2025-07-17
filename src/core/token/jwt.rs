@@ -107,26 +107,25 @@ impl TokenService for JwtTokenService {
     }
 
     /// Valide un access token - Avec la force d'Aoi Todo 💪
-    async fn validate_access_token<C: serde::de::DeserializeOwned + Claims + Send>(
+    async fn validate_access_token(
         &self,
         token: &str,
-    ) -> Result<C, AuthError> {
-        self.validate_token(token)
+    ) -> Result<Box<dyn Claims + Send + Sync>, AuthError> {
+        // Tu devras adapter cette ligne selon ton type de claims par défaut
+        let claims: AccessTokenClaims = self.validate_token(token)?;
+        Ok(Box::new(claims))
     }
 
     /// Rafraîchit un access token - Régénération mystique 🌙
     async fn refresh_access_token(&self, refresh_token: &str) -> Result<TokenPair, AuthError> {
-        // Valide le refresh token
         let refresh_claims: RefreshTokenClaims = self.validate_token(refresh_token)?;
 
-        // Vérifie que c'est bien un refresh token
         if refresh_claims.token_type != "refresh" {
             return Err(AuthError::InvalidToken(
                 "Expected refresh token".to_string(),
             ));
         }
 
-        // Génère une nouvelle paire de tokens
         self.generate_token_pair(&refresh_claims.sub).await
     }
 }
