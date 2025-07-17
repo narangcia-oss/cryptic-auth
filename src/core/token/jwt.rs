@@ -49,9 +49,8 @@ impl JwtTokenService {
 
         let header = Header::new(self.algorithm);
 
-        encode(&header, &claims, &self.encoding_key).map_err(|e| {
-            AuthError::TokenGeneration(format!("Failed to encode access token: {}", e))
-        })
+        encode(&header, &claims, &self.encoding_key)
+            .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode access token: {e}")))
     }
 
     /// Génère un refresh token
@@ -68,9 +67,8 @@ impl JwtTokenService {
 
         let header = Header::new(self.algorithm);
 
-        encode(&header, &claims, &self.encoding_key).map_err(|e| {
-            AuthError::TokenGeneration(format!("Failed to encode refresh token: {}", e))
-        })
+        encode(&header, &claims, &self.encoding_key)
+            .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode refresh token: {e}")))
     }
 
     /// Valide un token générique
@@ -90,7 +88,7 @@ impl JwtTokenService {
                 jsonwebtoken::errors::ErrorKind::InvalidSignature => {
                     AuthError::InvalidToken("Invalid token signature".to_string())
                 }
-                _ => AuthError::TokenValidation(format!("Token validation failed: {}", e)),
+                _ => AuthError::TokenValidation(format!("Token validation failed: {e}")),
             })
     }
 }
