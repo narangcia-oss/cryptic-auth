@@ -82,4 +82,11 @@ impl AuthService {
             Err(AuthError::InvalidCredentials)
         }
     }
+
+    pub async fn get_tokens(&self, id: String) -> Result<crate::core::token::TokenPair, AuthError> {
+        self.token_manager
+            .generate_token_pair(&id)
+            .await
+            .map_err(|e| e)
+    }
 }
