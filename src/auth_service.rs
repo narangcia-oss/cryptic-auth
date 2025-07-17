@@ -1,10 +1,7 @@
 //! This module contains the high-level logic for user authentication,
 //! acting as the central point of the crate's interactions.
 
-use crate::{
-    core::user::User,
-    error::{AuthError, AuthServiceError},
-};
+use crate::{core::user::User, error::AuthError};
 
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
@@ -21,9 +18,9 @@ impl AuthService {
         persistent_users_manager: Option<
             Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
         >,
-    ) -> Result<Self, AuthServiceError> {
-        let pwd_manager = password_manager.ok_or(AuthServiceError::MissingPasswordManager)?;
-        let pum = persistent_users_manager.ok_or(AuthServiceError::MissingPersistentUserManager)?;
+    ) -> Result<Self, AuthError> {
+        let pwd_manager = password_manager.ok_or(AuthError::MissingPasswordManager)?;
+        let pum = persistent_users_manager.ok_or(AuthError::MissingPersistentUserManager)?;
 
         Ok(AuthService {
             password_manager: pwd_manager,

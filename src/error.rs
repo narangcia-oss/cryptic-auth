@@ -11,12 +11,6 @@ pub enum AuthError {
     HashingError(String),
     #[error("Password verification failed: {0}")]
     PasswordVerificationError(String),
-    #[error("Token creation failed: {0}")]
-    TokenCreationError(String),
-    #[error("Token validation failed: {0}")]
-    TokenValidationError(String),
-    #[error("Token refresh failed: {0}")]
-    TokenRefreshError(String),
     #[error("Configuration error: {0}")]
     ConfigError(String),
     #[error("Service unavailable: {0}")]
@@ -29,10 +23,14 @@ pub enum AuthError {
     InvalidPassword(String),
     #[error("Verification error: {0}")]
     VerificationError(String),
-}
-
-#[derive(Debug, Error)]
-pub enum AuthServiceError {
+    #[error("Token expired")]
+    TokenExpired,
+    #[error("Token generation failed: {0}")]
+    TokenGeneration(String),
+    #[error("Token validation failed: {0}")]
+    TokenValidation(String),
+    #[error("InvalidToken: {0}")]
+    InvalidToken(String),
     #[error("MissingPasswordManager")]
     MissingPasswordManager,
     #[error("MissingPersistentUserManager")]
