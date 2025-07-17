@@ -31,3 +31,4 @@ pub trait TokenService {
 
 /// The default claims for JWTs.
 pub mod claims;
+pub mod jwt;
