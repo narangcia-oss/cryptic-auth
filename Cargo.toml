@@ -9,10 +9,6 @@ repository = "https://github.com/narangcia/cryptic"
 keywords = ["auth", "authentication", "security", "jwt", "argon2"]
 categories = ["authentication", "cryptography", "web-programming"]
 
-[lib]
-path = "src/lib.rs"
-features = ["full"]
-
 [dependencies]
 # Pour le hachage des mots de passe. Robuste et sécurisé.
 argon2 = "0.5.3"
