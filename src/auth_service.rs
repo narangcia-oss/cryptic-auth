@@ -17,14 +17,17 @@ pub struct AuthService {
 
 impl Default for AuthService {
     fn default() -> Self {
+        let vars = Arc::new(crate::core::vars::AuthServiceVariables::default());
         Self {
-            vars: Arc::new(crate::core::vars::AuthServiceVariables::default()),
+            vars: vars.clone(),
             password_manager: Box::new(crate::core::password::Argon2PasswordManager::default()),
             persistent_users_manager: Box::new(
                 crate::core::user::persistence::InMemoryUserRepo::new(),
             ),
             token_manager: Box::new(crate::core::token::jwt::JwtTokenService::new(
-                "e", 5000, 5000,
+                &vars.secret_key,
+                vars.token_expiration,
+                vars.refresh_token_expiration,
             )),
         }
     }
