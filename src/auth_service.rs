@@ -44,9 +44,22 @@ impl AuthService {
         >,
         token_manager: Option<Box<dyn crate::core::token::TokenService + Send + Sync>>,
     ) -> Result<Self, AuthError> {
-        let pwd_manager = password_manager.ok_or(AuthError::MissingPasswordManager)?;
-        let pum = persistent_users_manager.ok_or(AuthError::MissingPersistentUserManager)?;
-        let tk_manager = token_manager.ok_or(AuthError::MissingTokenManager)?;
+        let pwd_manager = match password_manager {
+            Some(manager) => manager,
+            None => Box::new(crate::core::password::Argon2PasswordManager::default()),
+        };
+        let pum = match persistent_users_manager {
+            Some(manager) => manager,
+            None => Box::new(crate::core::user::persistence::InMemoryUserRepo::new()),
+        };
+        let tk_manager = match token_manager {
+            Some(manager) => manager,
+            None => Box::new(crate::core::token::jwt::JwtTokenService::new(
+                &vars.secret_key,
+                vars.token_expiration,
+                vars.refresh_token_expiration,
+            )),
+        };
 
         Ok(AuthService {
             vars,
