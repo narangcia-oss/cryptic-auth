@@ -9,7 +9,7 @@ A robust and secure Rust crate for authentication, meticulously designed to prov
 * **Robust and Secure Error Handling**.
 * **Asynchronous API**: Built on `async/await` for optimal performance.
 * **SQLX**: Supports PostgreSQL via SQLX. (Optional)
-* **AXUM**: Supports web server via AXUM. (Optional)
+* **Web Server**: Supports web server via Axum. (Optional)
 
 ## Quick Start
 
