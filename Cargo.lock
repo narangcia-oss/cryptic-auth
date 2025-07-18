@@ -1219,6 +1219,7 @@ dependencies = [
  "log",
  "rand 0.9.1",
  "serde",
+ "serde_json",
  "sqlx",
  "sqlx-postgres",
  "thiserror",

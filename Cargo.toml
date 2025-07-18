@@ -10,6 +10,8 @@ keywords = ["auth", "authentication", "security", "jwt", "argon2"]
 categories = ["authentication", "cryptography", "web-programming"]
 
 [lib]
+path = "src/lib.rs"
+features = ["full"]
 
 [dependencies]
 # Pour le hachage des mots de passe. Robuste et sécurisé.
@@ -31,6 +33,7 @@ rand = { version = "0.9.1" }
 # Pour la journalisation professionnelle (niveau infos/erreurs).
 log = "0.4.27"
 zeroize = { version = "1.8.1", features = ["derive"] }
+serde_json = "1.0"
 
 # --- Optional dependencies for features ---
 sqlx = { version = "0.8.6", features = [
@@ -49,6 +52,7 @@ tokio = { version = "1.46.1", features = ["full"], optional = true }
 bare = []
 sqlx = ["dep:sqlx", "dep:sqlx-postgres"]
 web = ["axum", "tokio"]
+full = ["sqlx", "web"]
 
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples

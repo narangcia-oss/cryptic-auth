@@ -73,6 +73,8 @@ impl AuthService {
     pub async fn signup(&self, user: User) -> Result<(), AuthError> {
         self.persistent_users_manager
             .add_user(user)
+            .await
+            .map(|_user| ()) // Discard the returned User, return ()
             .map_err(|e| AuthError::NotImplemented(format!("signup: {e}")))
     }
 
@@ -87,6 +89,7 @@ impl AuthService {
         let stored_user = self
             .persistent_users_manager
             .get_user_by_identifier(identifier)
+            .await
             .ok_or(AuthError::InvalidCredentials)?;
 
         // Verify the password using the password manager from the service
@@ -155,6 +158,7 @@ impl AuthService {
         let user_id = self.get_user_id_from_token(token).await?;
         self.persistent_users_manager
             .get_user_by_id(&user_id)
+            .await
             .ok_or(AuthError::UserNotFound)
     }
 }

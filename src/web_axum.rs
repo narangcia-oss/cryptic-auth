@@ -6,6 +6,8 @@ use std::sync::Arc;
 
 #[cfg(feature = "web")]
 pub async fn start_server(auth_service: Arc<AuthService>) {
+    use axum::serve;
+    use tokio::net::TcpListener;
     let app = Router::new()
         .route("/signup", post(signup_handler))
         .route("/login", post(login_handler))
@@ -14,10 +16,8 @@ pub async fn start_server(auth_service: Arc<AuthService>) {
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("Axum server running at http://{}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = TcpListener::bind(addr).await.unwrap();
+    serve(listener, app).await.unwrap();
 }
 
 #[cfg(feature = "web")]
@@ -31,27 +31,36 @@ async fn signup_handler(
         password: String,
     }
 
-    // Try to parse the body as SignupRequest
     let req: Result<SignupRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(signup) => {
-            match _auth.signup(&signup.username, &signup.password).await {
-                Ok(user) => {
-                    // Return user info as JSON (excluding sensitive fields)
-                    serde_json::json!({
-                        "id": user.id,
-                        "username": user.username,
-                        "created_at": user.created_at
-                    })
-                    .to_string()
+            // Create credentials using the password manager
+            let credentials_result = crate::core::credentials::Credentials::from_plain_password(
+                _auth.password_manager.as_ref(),
+                signup.username.clone(),
+                crate::core::credentials::PlainPassword::new(signup.password.clone()),
+            )
+            .await;
+            match credentials_result {
+                Ok(credentials) => {
+                    let user =
+                        crate::core::user::User::new(uuid::Uuid::new_v4().to_string(), credentials);
+                    match _auth.signup(user.clone()).await {
+                        Ok(_) => serde_json::json!({
+                            "id": user.id,
+                            "identifier": user.credentials.identifier
+                        })
+                        .to_string(),
+                        Err(e) => serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    }
                 }
-                Err(e) => {
-                    // Return error as JSON
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
-                }
+                Err(e) => serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
             }
         }
         Err(e) => serde_json::json!({
@@ -72,29 +81,24 @@ async fn login_handler(
         password: String,
     }
 
-    // Try to parse the body as LoginRequest
     let req: Result<LoginRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(login) => {
             match _auth
-                .login_with_credentials(&login.username, &login.password)
+                .login_with_credentials_and_tokens(&login.username, &login.password)
                 .await
             {
-                Ok(token_pair) => {
-                    // Return tokens as JSON
-                    serde_json::json!({
-                        "access_token": token_pair.access_token,
-                        "refresh_token": token_pair.refresh_token
-                    })
-                    .to_string()
-                }
-                Err(e) => {
-                    // Return error as JSON
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
-                }
+                Ok((user, tokens)) => serde_json::json!({
+                    "id": user.id,
+                    "identifier": user.credentials.identifier,
+                    "access_token": tokens.access_token,
+                    "refresh_token": tokens.refresh_token
+                })
+                .to_string(),
+                Err(e) => serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
             }
         }
         Err(e) => serde_json::json!({

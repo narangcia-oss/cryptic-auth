@@ -1,6 +1,10 @@
+use async_trait::async_trait;
+
 #[cfg(feature = "sqlx")]
-use crate::core::user::User;
+use crate::{core::user::User, error::AuthError};
+
 #[cfg(feature = "sqlx")]
+#[derive(Debug)]
 pub struct PgUserRepo {
     pool: sqlx::PgPool,
 }
@@ -15,25 +19,25 @@ impl PgUserRepo {
 }
 
 #[cfg(feature = "sqlx")]
+#[async_trait]
 impl super::traits::UserRepository for PgUserRepo {
-    fn add_user(&self, user: User) -> Result<(), String> {
-        // Use sqlx to insert user into DB (stub)
-        Err("Not implemented: add_user for PgUserRepo".to_string())
+    async fn add_user(&self, user: User) -> Result<User, crate::error::AuthError> {
+        Err(AuthError::NotImplemented(format!("add_user: {user}")))
     }
-    fn get_user_by_id(&self, id: &str) -> Option<User> {
+    async fn get_user_by_id(&self, id: &str) -> Option<User> {
         // Use sqlx to fetch user by id (stub)
         None
     }
-    fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
+    async fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
         // Use sqlx to fetch user by identifier (stub)
         None
     }
-    fn update_user(&self, user: User) -> Result<(), String> {
+    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
         // Use sqlx to update user (stub)
-        Err("Not implemented: update_user for PgUserRepo".to_string())
+        Err(AuthError::NotImplemented(format!("update_user: {user}")))
     }
-    fn delete_user(&self, id: &str) -> Result<(), String> {
+    async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError> {
         // Use sqlx to delete user (stub)
-        Err("Not implemented: delete_user for PgUserRepo".to_string())
+        Err(AuthError::NotImplemented(format!("delete_user: {id}")))
     }
 }
