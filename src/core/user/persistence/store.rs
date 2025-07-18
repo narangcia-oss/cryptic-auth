@@ -29,7 +29,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.add_user(user).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.add_user(user),
+            PersistentUsers::Database(repo) => repo.add_user(user).await,
         }
     }
 
@@ -37,7 +37,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.get_user_by_id(id).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.get_user_by_id(id),
+            PersistentUsers::Database(repo) => repo.get_user_by_id(id).await,
         }
     }
 
@@ -45,7 +45,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.get_user_by_identifier(identifier).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.get_user_by_identifier(identifier),
+            PersistentUsers::Database(repo) => repo.get_user_by_identifier(identifier).await,
         }
     }
 
@@ -53,7 +53,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.update_user(user).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.update_user(user),
+            PersistentUsers::Database(repo) => repo.update_user(user).await,
         }
     }
 
@@ -61,7 +61,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.delete_user(id).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.delete_user(id),
+            PersistentUsers::Database(repo) => repo.delete_user(id).await,
         }
     }
 }
