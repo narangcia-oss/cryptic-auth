@@ -8,6 +8,8 @@ A robust and secure Rust crate for authentication, meticulously designed to prov
 * **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
 * **Robust and Secure Error Handling**.
 * **Asynchronous API**: Built on `async/await` for optimal performance.
+* **SQLX**: Supports PostgreSQL via SQLX. (Optional)
+* **AXUM**: Supports web server via AXUM. (Optional)
 
 ## Quick Start
 
@@ -15,7 +17,7 @@ Add this line to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-narangcia-cryptic = "0.2.0"
+narangcia-cryptic = { version = "0.2.0", features = ["sqlx", "web"] }
 ```
 
 ## Development
