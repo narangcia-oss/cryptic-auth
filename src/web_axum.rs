@@ -25,8 +25,40 @@ async fn signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
-    // TODO: Parse body, call AuthService.signup, return result
-    "Signup endpoint stub".to_string()
+    #[derive(Deserialize)]
+    struct SignupRequest {
+        username: String,
+        password: String,
+    }
+
+    // Try to parse the body as SignupRequest
+    let req: Result<SignupRequest, _> = serde_json::from_value(_body);
+    match req {
+        Ok(signup) => {
+            match _auth.signup(&signup.username, &signup.password).await {
+                Ok(user) => {
+                    // Return user info as JSON (excluding sensitive fields)
+                    serde_json::json!({
+                        "id": user.id,
+                        "username": user.username,
+                        "created_at": user.created_at
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    // Return error as JSON
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
+            }
+        }
+        Err(e) => serde_json::json!({
+            "error": format!("Invalid request body: {}", e)
+        })
+        .to_string(),
+    }
 }
 
 #[cfg(feature = "web")]
