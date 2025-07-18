@@ -8,10 +8,14 @@
 pub mod auth_service;
 pub mod core;
 pub mod error;
+#[cfg(feature = "web")]
+pub mod web_axum;
 
 // Re-export key elements for easier use
 pub use auth_service::AuthService;
 pub use error::AuthError;
+#[cfg(feature = "web")]
+pub use web_axum::start_server;
 
 // You can add other 'use' statements here as your crate grows
 // For example:

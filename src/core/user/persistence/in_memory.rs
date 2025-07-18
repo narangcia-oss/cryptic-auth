@@ -40,4 +40,31 @@ impl UserRepository for InMemoryUserRepo {
             .find(|u| u.credentials.identifier == identifier)
             .cloned()
     }
+
+    fn update_user(&self, user: User) -> Result<(), String> {
+        let mut users = self
+            .users
+            .lock()
+            .map_err(|e| format!("Failed to lock users: {e}"))?;
+        if let Some(existing) = users.iter_mut().find(|u| u.id == user.id) {
+            *existing = user;
+            Ok(())
+        } else {
+            Err("User not found".to_string())
+        }
+    }
+
+    fn delete_user(&self, id: &str) -> Result<(), String> {
+        let mut users = self
+            .users
+            .lock()
+            .map_err(|e| format!("Failed to lock users: {e}"))?;
+        let len_before = users.len();
+        users.retain(|u| u.id != id);
+        if users.len() < len_before {
+            Ok(())
+        } else {
+            Err("User not found".to_string())
+        }
+    }
 }

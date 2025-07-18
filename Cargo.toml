@@ -32,6 +32,24 @@ rand = { version = "0.9.1" }
 log = "0.4.27"
 zeroize = { version = "1.8.1", features = ["derive"] }
 
+# --- Optional dependencies for features ---
+sqlx = { version = "0.8.6", features = [
+  "runtime-tokio",
+  "macros",
+  "postgres",
+  "uuid",
+  "chrono",
+  "migrate",
+], optional = true }
+sqlx-postgres = { version = "0.8.6", optional = true }
+axum = { version = "0.8.4", optional = true }
+tokio = { version = "1.46.1", features = ["full"], optional = true }
+
+[features]
+bare = []
+sqlx = ["dep:sqlx", "dep:sqlx-postgres"]
+web = ["axum", "tokio"]
+
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples
 tokio = { version = "1.46.1", features = ["full"] }
