@@ -16,6 +16,7 @@ pub mod web_axum;
 // Re-export key elements for easier use
 pub use auth_service::AuthService;
 pub use error::AuthError;
+pub use core::user::User as CrypticUser;
 #[cfg(feature = "web")]
 pub use web_axum::get_cryptic_axum_router;
 #[cfg(feature = "web")]
