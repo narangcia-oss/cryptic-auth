@@ -45,7 +45,9 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.get_user_by_identifier(identifier).await,
             #[cfg(feature = "postgres")]
-            PersistentUsers::PostgresDatabase(repo) => repo.get_user_by_identifier(identifier).await,
+            PersistentUsers::PostgresDatabase(repo) => {
+                repo.get_user_by_identifier(identifier).await
+            }
         }
     }
 
