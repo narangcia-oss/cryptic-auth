@@ -27,7 +27,24 @@
 //! - POST /health
 //!
 //! curl -X POST http://localhost:3000/health
-//! 
+//!
+//!
+//! - GET /health
+//!
+//! curl http://localhost:3000/health
+//!
+//! - POST /token/refresh {"refresh_token": "<refresh_token>"}
+//!
+//! curl -X POST http://localhost:3000/token/refresh \
+//!  -H "Content-Type: application/json" \
+//!  -d '{"refresh_token": "<refresh_token>"}'
+//!
+//! - POST /token/validate {"token": "<access_token>"}
+//!
+//! curl -X POST http://localhost:3000/token/validate \
+//!  -H "Content-Type: application/json" \
+//!  -d '{"token": "<access_token>"}'
+//!
 //! ## Notes
 //!
 //! - Requires the `web` feature flag.
