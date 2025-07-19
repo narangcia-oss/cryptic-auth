@@ -29,7 +29,11 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         let cred_user_id = Uuid::parse_str(&user.credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
 
-        let mut conn = self.pool.acquire().await.map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
 
         // Insert into cryptic_users
         sqlx::query!("INSERT INTO cryptic_users (id) VALUES ($1)", user_id)
@@ -99,7 +103,11 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         // Convert String user_id to Uuid
         let cred_user_id = Uuid::parse_str(&user.credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
-        let mut conn = self.pool.acquire().await.map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
         // Update credentials (identifier and password_hash)
         sqlx::query!(
             "UPDATE cryptic_credentials SET identifier = $1, password_hash = $2 WHERE user_id = $3",
@@ -114,7 +122,11 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     }
     async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError> {
         let uuid = Uuid::parse_str(id).map_err(|e| AuthError::DatabaseError(e.to_string()))?;
-        let mut conn = self.pool.acquire().await.map_err(|e| AuthError::DatabaseError(e.to_string()))?;
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
         sqlx::query!("DELETE FROM cryptic_users WHERE id = $1", uuid)
             .execute(&mut *conn)
             .await
