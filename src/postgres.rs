@@ -20,13 +20,13 @@ impl PgUserRepo {
 
 #[cfg(feature = "sqlx")]
 #[async_trait]
-impl super::traits::UserRepository for PgUserRepo {
+impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     async fn add_user(&self, user: User) -> Result<User, crate::error::AuthError> {
         let _ = self.pool; // Suppress unused variable warning
         let _ = user; // Suppress unused variable warning
-        Err(AuthError::NotImplemented(format!(
-            "add_user not implemented for PgUserRepo"
-        )))
+        Err(AuthError::NotImplemented(
+            "add_user not implemented for PgUserRepo".to_string(),
+        ))
     }
     async fn get_user_by_id(&self, id: &str) -> Option<User> {
         // Use sqlx to fetch user by id (stub)
@@ -41,15 +41,15 @@ impl super::traits::UserRepository for PgUserRepo {
     async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
         // Use sqlx to update user (stub)
         let _ = user; // Suppress unused variable warning
-        Err(AuthError::NotImplemented(format!(
-            "update_user not implemented for PgUserRepo"
-        )))
+        Err(AuthError::NotImplemented(
+            "update_user not implemented for PgUserRepo".to_string(),
+        ))
     }
     async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError> {
         // Use sqlx to delete user (stub)
         let _ = id; // Suppress unused variable warning
-        Err(AuthError::NotImplemented(format!(
-            "delete_user not implemented for PgUserRepo"
-        )))
+        Err(AuthError::NotImplemented(
+            "delete_user not implemented for PgUserRepo".to_string(),
+        ))
     }
 }

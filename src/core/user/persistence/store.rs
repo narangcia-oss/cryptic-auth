@@ -3,13 +3,13 @@ use crate::core::user::User;
 use async_trait::async_trait;
 
 #[cfg(feature = "sqlx")]
-use crate::core::user::persistence::PgUserRepo;
+use crate::postgres::PgUserRepo;
 
 #[derive(Debug)]
 pub enum PersistentUsers {
     InMemory(InMemoryUserRepo),
     #[cfg(feature = "sqlx")]
-    Database(PgUserRepo),
+    PostgresDatabase(PgUserRepo),
     // FileSystem(FsUserRepo),
 }
 
@@ -18,8 +18,8 @@ impl PersistentUsers {
         PersistentUsers::InMemory(InMemoryUserRepo::new())
     }
     #[cfg(feature = "sqlx")]
-    pub fn database(repo: PgUserRepo) -> Self {
-        PersistentUsers::Database(repo)
+    pub fn postgres_database(repo: PgUserRepo) -> Self {
+        PersistentUsers::PostgresDatabase(repo)
     }
 }
 
@@ -29,7 +29,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.add_user(user).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.add_user(user).await,
+            PersistentUsers::PostgresDatabase(repo) => repo.add_user(user).await,
         }
     }
 
@@ -37,7 +37,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.get_user_by_id(id).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.get_user_by_id(id).await,
+            PersistentUsers::PostgresDatabase(repo) => repo.get_user_by_id(id).await,
         }
     }
 
@@ -45,7 +45,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.get_user_by_identifier(identifier).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.get_user_by_identifier(identifier).await,
+            PersistentUsers::PostgresDatabase(repo) => repo.get_user_by_identifier(identifier).await,
         }
     }
 
@@ -53,7 +53,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.update_user(user).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.update_user(user).await,
+            PersistentUsers::PostgresDatabase(repo) => repo.update_user(user).await,
         }
     }
 
@@ -61,7 +61,7 @@ impl UserRepository for PersistentUsers {
         match self {
             PersistentUsers::InMemory(repo) => repo.delete_user(id).await,
             #[cfg(feature = "sqlx")]
-            PersistentUsers::Database(repo) => repo.delete_user(id).await,
+            PersistentUsers::PostgresDatabase(repo) => repo.delete_user(id).await,
         }
     }
 }

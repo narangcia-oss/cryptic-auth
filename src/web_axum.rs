@@ -15,7 +15,7 @@ pub async fn start_server(auth_service: Arc<AuthService>) {
         .with_state(auth_service);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000));
-    println!("Axum server running at http://{}", addr);
+    println!("Axum server running at http://{addr}");
     let listener = TcpListener::bind(addr).await.unwrap();
     serve(listener, app).await.unwrap();
 }
