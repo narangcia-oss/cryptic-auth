@@ -8,7 +8,7 @@
 pub mod auth_service;
 pub mod core;
 pub mod error;
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "postgres")]
 pub mod postgres;
 #[cfg(feature = "web")]
 pub mod web_axum;

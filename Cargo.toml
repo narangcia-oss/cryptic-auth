@@ -46,9 +46,9 @@ tokio = { version = "1.46.1", features = ["full"], optional = true }
 
 [features]
 bare = []
-sqlx = ["dep:sqlx", "dep:sqlx-postgres"]
+postgres = ["dep:sqlx", "dep:sqlx-postgres"]
 web = ["axum", "tokio"]
-full = ["sqlx", "web"]
+full = ["postgres", "web"]
 
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples

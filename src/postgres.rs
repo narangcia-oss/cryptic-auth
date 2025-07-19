@@ -1,15 +1,15 @@
 use async_trait::async_trait;
 
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "postgres")]
 use crate::{core::user::User, error::AuthError};
 
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "postgres")]
 #[derive(Debug)]
 pub struct PgUserRepo {
     pool: sqlx::PgPool,
 }
 
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "postgres")]
 impl PgUserRepo {
     pub async fn new(pool: sqlx::PgPool) -> Result<Self, String> {
         // Optionally run migrations or schema validation here
@@ -18,7 +18,7 @@ impl PgUserRepo {
     }
 }
 
-#[cfg(feature = "sqlx")]
+#[cfg(feature = "postgres")]
 #[async_trait]
 impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     async fn add_user(&self, user: User) -> Result<User, crate::error::AuthError> {
