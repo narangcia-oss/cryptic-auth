@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE cryptic_credentials SET identifier = $1, password_hash = $2 WHERE user_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7c6737d409233508b72e4eea67c6bc5e63e3ba811157cb4f1aa25793cd2fc5bd"
+}
