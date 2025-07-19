@@ -5,8 +5,8 @@ use crate::core::credentials::{Credentials, PlainPassword};
 
 #[derive(Debug, Clone, Default)]
 pub struct User {
-    pub id: String,
-    pub credentials: Credentials,
+    pub id: String, // Unique identifier for the user (preferably UUID)
+    pub credentials: Credentials, // User credentials, including hashed password and identifier
 }
 
 impl User {
