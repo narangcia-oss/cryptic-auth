@@ -36,15 +36,14 @@ use narangcia_cryptic::AuthService;
 async fn test_auth_service_signup_not_implemented() {
     let auth_service = AuthService::default();
 
-    let credentials = narangcia_cryptic::core::credentials::Credentials::from_plain_password(
+    let user = narangcia_cryptic::core::user::User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        "test_user_id".to_string(),
         "test_user".to_string(),
         narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
-    .await;
-
-    let credentials = credentials.expect("Failed to create credentials");
-    let user = narangcia_cryptic::core::user::User::new("test_user".to_string(), credentials);
+    .await
+    .expect("Failed to create user");
 
     let result = auth_service.signup(user).await;
     assert!(result.is_ok());
@@ -55,15 +54,14 @@ async fn test_auth_service_login_success() {
     // Create a user first
     let auth_service = narangcia_cryptic::AuthService::default();
 
-    let credentials = narangcia_cryptic::core::credentials::Credentials::from_plain_password(
+    let user = narangcia_cryptic::core::user::User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        "test_user_id".to_string(),
         "test_user".to_string(),
         narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
     )
-    .await;
-
-    let credentials = credentials.expect("Failed to create credentials");
-    let user = narangcia_cryptic::core::user::User::new("test_user_id".to_string(), credentials);
+    .await
+    .expect("Failed to create user");
 
     let auth_service = narangcia_cryptic::AuthService::default();
 
@@ -174,14 +172,14 @@ use narangcia_cryptic::core::user::persistence::{InMemoryUserRepo, UserRepositor
 async fn test_in_memory_user_repo_add_and_get_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
-    let credentials = Credentials::from_plain_password(
+    let user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        "id1".to_string(),
         "user1".to_string(),
         PlainPassword::new("password1".to_string()),
     )
     .await
-    .expect("Failed to create credentials");
-    let user = User::new("id1".to_string(), credentials.clone());
+    .expect("Failed to create user");
     let added = repo.add_user(user.clone()).await.expect("Add user failed");
     assert_eq!(added.id, "id1");
     let fetched = repo.get_user_by_id("id1").await;
@@ -199,14 +197,14 @@ async fn test_in_memory_user_repo_add_and_get_user() {
 async fn test_in_memory_user_repo_update_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
-    let credentials = Credentials::from_plain_password(
+    let mut user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        "id2".to_string(),
         "user2".to_string(),
         PlainPassword::new("password2".to_string()),
     )
     .await
-    .expect("Failed to create credentials");
-    let mut user = User::new("id2".to_string(), credentials.clone());
+    .expect("Failed to create user");
     repo.add_user(user.clone()).await.expect("Add user failed");
     // Update identifier
     user.credentials.identifier = "user2_updated".to_string();
@@ -220,14 +218,14 @@ async fn test_in_memory_user_repo_update_user() {
 async fn test_in_memory_user_repo_delete_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
-    let credentials = Credentials::from_plain_password(
+    let user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        "id3".to_string(),
         "user3".to_string(),
         PlainPassword::new("password3".to_string()),
     )
     .await
-    .expect("Failed to create credentials");
-    let user = User::new("id3".to_string(), credentials.clone());
+    .expect("Failed to create user");
     repo.add_user(user.clone()).await.expect("Add user failed");
     let del_result = repo.delete_user("id3").await;
     assert!(del_result.is_ok());
@@ -284,9 +282,10 @@ async fn test_credentials_new_and_verify() {
     let password = "testpass".to_string();
     let manager = Argon2PasswordManager::default();
     let plain = PlainPassword::new(password.clone());
-    let creds = Credentials::from_plain_password(&manager, identifier.clone(), plain)
-        .await
-        .expect("Failed to create credentials");
+    let creds =
+        Credentials::from_plain_password(&manager, identifier.clone(), identifier.clone(), plain)
+            .await
+            .expect("Failed to create credentials");
     assert_eq!(creds.identifier, identifier);
     // Should verify with correct password
     let verify = creds
@@ -304,9 +303,11 @@ async fn test_credentials_new_and_verify() {
 
 #[test]
 fn test_credentials_struct_and_plain_password() {
+    let user_id = "user_id".to_string();
     let identifier = "id".to_string();
     let hash = "hashval".to_string();
-    let creds = Credentials::new(identifier.clone(), hash.clone());
+    let creds = Credentials::new(user_id.clone(), identifier.clone(), hash.clone());
+    assert_eq!(creds.user_id, user_id);
     assert_eq!(creds.identifier, identifier);
     assert_eq!(creds.password_hash, hash);
 

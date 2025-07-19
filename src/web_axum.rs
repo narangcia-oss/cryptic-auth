@@ -49,29 +49,26 @@ async fn signup_handler(
     let req: Result<SignupRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(signup) => {
-            // Create credentials using the password manager
-            let credentials_result = crate::core::credentials::Credentials::from_plain_password(
+            // Create user using the password manager and plain password
+            let user_result = crate::core::user::User::with_plain_password(
                 _auth.password_manager.as_ref(),
+                uuid::Uuid::new_v4().to_string(),
                 signup.username.clone(),
                 crate::core::credentials::PlainPassword::new(signup.password.clone()),
             )
             .await;
-            match credentials_result {
-                Ok(credentials) => {
-                    let user =
-                        crate::core::user::User::new(uuid::Uuid::new_v4().to_string(), credentials);
-                    match _auth.signup(user.clone()).await {
-                        Ok(_) => serde_json::json!({
-                            "id": user.id,
-                            "identifier": user.credentials.identifier
-                        })
-                        .to_string(),
-                        Err(e) => serde_json::json!({
-                            "error": e.to_string()
-                        })
-                        .to_string(),
-                    }
-                }
+            match user_result {
+                Ok(user) => match _auth.signup(user.clone()).await {
+                    Ok(_) => serde_json::json!({
+                        "id": user.id,
+                        "identifier": user.credentials.identifier
+                    })
+                    .to_string(),
+                    Err(e) => serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string(),
+                },
                 Err(e) => serde_json::json!({
                     "error": e.to_string()
                 })
