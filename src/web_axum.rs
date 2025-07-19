@@ -24,6 +24,18 @@ pub async fn start_server(auth_service: Arc<AuthService>) {
 }
 
 #[cfg(feature = "web")]
+pub fn get_cryptic_axum_router(auth_service: Arc<AuthService>) -> Router {
+    use axum::routing::{get, post};
+    Router::new()
+        .route("/signup", post(signup_handler))
+        .route("/login", post(login_handler))
+        .route("/health", get(health_handler).post(health_handler))
+        .route("/token/refresh", post(refresh_token_handler))
+        .route("/token/validate", post(validate_token_handler))
+        .with_state(auth_service)
+}
+
+#[cfg(feature = "web")]
 async fn signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,

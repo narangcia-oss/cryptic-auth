@@ -17,9 +17,6 @@ pub mod web_axum;
 pub use auth_service::AuthService;
 pub use error::AuthError;
 #[cfg(feature = "web")]
+pub use web_axum::get_cryptic_axum_router;
+#[cfg(feature = "web")]
 pub use web_axum::start_server;
-
-// You can add other 'use' statements here as your crate grows
-// For example:
-// pub use user::{User, Credentials};
-// pub use token::TokenPair;
