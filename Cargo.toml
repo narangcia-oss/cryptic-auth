@@ -29,7 +29,7 @@ rand = { version = "0.9.1" }
 # Pour la journalisation professionnelle (niveau infos/erreurs).
 log = "0.4.27"
 zeroize = { version = "1.8.1", features = ["derive"] }
-serde_json = "1.0"
+serde_json = "1.0.141"
 
 # --- Optional dependencies for features ---
 sqlx = { version = "0.8.6", features = [
