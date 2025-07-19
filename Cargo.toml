@@ -63,5 +63,5 @@ criterion = { version = "0.6.0", features = [
 ], default-features = false }
 
 [[bench]]
-name = "hashing_perf"
+name = "all_benches"
 harness = false
