@@ -14,8 +14,153 @@ pub struct PgUserRepo {
 
 #[cfg(feature = "postgres")]
 impl PgUserRepo {
-    pub async fn new(conn: sqlx::PgConnection) -> Result<Self, String> {
-        // Optionally run migrations or schema validation here
+    pub async fn new(conn: sqlx::PgConnection) -> Result<Self, crate::error::AuthError> {
+        // Full schema validation for cryptic_users and cryptic_credentials
+        use sqlx::Row;
+        let mut conn = conn;
+
+        // Check cryptic_users table
+        let user_cols = sqlx::query(
+            r#"SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_name = 'cryptic_users'"#,
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(|e| AuthError::DatabaseError(format!("cryptic_users table missing: {e}")))?;
+        let mut has_id = false;
+        for col in &user_cols {
+            let name: &str = col.get("column_name");
+            let dtype: &str = col.get("data_type");
+            if name == "id" && dtype == "uuid" {
+                has_id = true;
+            }
+        }
+        if !has_id {
+            return Err(AuthError::DatabaseError(
+                "cryptic_users.id column missing or wrong type".to_string(),
+            ));
+        }
+
+        // Check primary key on cryptic_users.id
+        let pk = sqlx::query(
+            r#"SELECT kcu.column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.table_name = 'cryptic_users' AND tc.constraint_type = 'PRIMARY KEY'"#,
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(|e| AuthError::DatabaseError(format!("cryptic_users PK check failed: {e}")))?;
+        let mut pk_ok = false;
+        for row in &pk {
+            let col: &str = row.get("column_name");
+            if col == "id" {
+                pk_ok = true;
+            }
+        }
+        if !pk_ok {
+            return Err(AuthError::DatabaseError(
+                "cryptic_users.id is not primary key".to_string(),
+            ));
+        }
+
+        // Check cryptic_credentials table
+        let cred_cols = sqlx::query(
+            r#"SELECT column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_name = 'cryptic_credentials'"#,
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials table missing: {e}")))?;
+        let mut has_user_id = false;
+        let mut has_identifier = false;
+        let mut has_password_hash = false;
+        for col in &cred_cols {
+            let name: &str = col.get("column_name");
+            let dtype: &str = col.get("data_type");
+            if name == "user_id" && dtype == "uuid" {
+                has_user_id = true;
+            }
+            if name == "identifier" && dtype == "character varying" {
+                has_identifier = true;
+            }
+            if name == "password_hash" && dtype == "character varying" {
+                has_password_hash = true;
+            }
+        }
+        if !has_user_id || !has_identifier || !has_password_hash {
+            return Err(AuthError::DatabaseError(
+                "cryptic_credentials columns missing or wrong types".to_string(),
+            ));
+        }
+
+        // Check PK on cryptic_credentials.user_id
+        let cred_pk = sqlx::query(
+            r#"SELECT kcu.column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'PRIMARY KEY'"#
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials PK check failed: {e}")))?;
+        let mut cred_pk_ok = false;
+        for row in &cred_pk {
+            let col: &str = row.get("column_name");
+            if col == "user_id" {
+                cred_pk_ok = true;
+            }
+        }
+        if !cred_pk_ok {
+            return Err(AuthError::DatabaseError(
+                "cryptic_credentials.user_id is not primary key".to_string(),
+            ));
+        }
+
+        // Check unique constraint on identifier
+        let _unique_identifier = sqlx::query(
+            r#"SELECT tc.constraint_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.constraint_column_usage ccu
+                  ON tc.constraint_name = ccu.constraint_name
+                WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'UNIQUE' AND ccu.column_name = 'identifier'"#
+        )
+        .fetch_one(&mut conn)
+        .await
+        .map_err(|_| AuthError::DatabaseError("cryptic_credentials.identifier is not unique".to_string()))?;
+
+        // Check FK from cryptic_credentials.user_id to cryptic_users.id
+        let fk = sqlx::query(
+            r#"SELECT kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                JOIN information_schema.constraint_column_usage ccu
+                  ON tc.constraint_name = ccu.constraint_name
+                WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'FOREIGN KEY'"#
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials FK check failed: {e}")))?;
+        let mut fk_ok = false;
+        for row in &fk {
+            let col: &str = row.get("column_name");
+            let ftable: &str = row.get("foreign_table_name");
+            let fcol: &str = row.get("foreign_column_name");
+            if col == "user_id" && ftable == "cryptic_users" && fcol == "id" {
+                fk_ok = true;
+            }
+        }
+        if !fk_ok {
+            return Err(AuthError::DatabaseError(
+                "cryptic_credentials.user_id does not reference cryptic_users.id".to_string(),
+            ));
+        }
+
         Ok(Self {
             conn: Mutex::new(conn),
         })
