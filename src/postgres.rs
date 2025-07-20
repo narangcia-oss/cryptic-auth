@@ -1,3 +1,18 @@
+//! Postgres-backed user repository implementation for the Cryptic authentication system.
+//!
+//! This module provides the [`PgUserRepo`] struct, which implements the user repository
+//! trait for storing and retrieving user and credential data in a PostgreSQL database.
+//!
+//! # Features
+//!
+//! - Comprehensive schema validation for required tables and constraints
+//! - Async operations using `tokio` and `sqlx`
+//! - Implements the [`UserRepository`] trait for user CRUD operations
+//!
+//! # Usage
+//!
+//! This module is only available when the `postgres` feature is enabled.
+
 use async_trait::async_trait;
 use uuid::Uuid;
 
@@ -7,14 +22,28 @@ use crate::{core::user::User, error::AuthError};
 #[cfg(feature = "postgres")]
 use tokio::sync::Mutex;
 
+/// A PostgreSQL-backed implementation of the user repository.
+///
+/// This struct manages a single mutable PostgreSQL connection for user and credential operations.
+/// If you need connection pooling, wrap this repository in a pool-aware struct.
 #[derive(Debug)]
 #[cfg(feature = "postgres")]
 pub struct PgUserRepo {
-    conn: Mutex<sqlx::PgConnection>, // Never use a connection pool directly, just a single connection. If you want to use a pool, wrap your repo in a pool-aware struct. This is a single connection meant to be mutable.
+    /// The underlying PostgreSQL connection, protected by a mutex for safe concurrent access.
+    conn: Mutex<sqlx::PgConnection>,
 }
 
 #[cfg(feature = "postgres")]
 impl PgUserRepo {
+    /// Checks that the required PostgreSQL schema for Cryptic exists and is valid.
+    ///
+    /// This function verifies the existence and structure of the `cryptic_users` and
+    /// `cryptic_credentials` tables, their columns, primary keys, unique constraints,
+    /// and foreign key relationships.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::DatabaseError`] if any required table, column, or constraint is missing or invalid.
     pub async fn check_schema(
         conn: &mut sqlx::PgConnection,
     ) -> Result<(), crate::error::AuthError> {
@@ -165,9 +194,20 @@ impl PgUserRepo {
         Ok(())
     }
 
+    /// Creates a new [`PgUserRepo`] instance from a PostgreSQL connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - An established [`sqlx::PgConnection`] to the database.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new [`PgUserRepo`] instance wrapped in a mutex.
+    ///
+    /// # Errors
+    ///
+    /// This function does not perform schema validation. Call [`check_schema`] separately if needed.
     pub async fn new(conn: sqlx::PgConnection) -> Result<Self, crate::error::AuthError> {
-        // Full schema validation for cryptic_users and cryptic_credentials
-
         Ok(Self {
             conn: Mutex::new(conn),
         })
@@ -177,6 +217,19 @@ impl PgUserRepo {
 #[cfg(feature = "postgres")]
 #[async_trait]
 impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
+    /// Adds a new user and their credentials to the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `user` - The [`User`] struct to insert.
+    ///
+    /// # Returns
+    ///
+    /// Returns the inserted [`User`] on success.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::DatabaseError`] if insertion fails or IDs are invalid.
     async fn add_user(&self, user: User) -> Result<User, crate::error::AuthError> {
         // Convert String IDs to Uuid
         let user_id =
@@ -205,6 +258,15 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         Ok(user)
     }
 
+    /// Retrieves a user and their credentials by user ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The user ID as a string (UUID format).
+    ///
+    /// # Returns
+    ///
+    /// Returns [`Some(User)`] if found, or [`None`] if not found or ID is invalid.
     async fn get_user_by_id(&self, id: &str) -> Option<User> {
         let uuid = Uuid::parse_str(id).ok()?;
         let mut conn = self.conn.lock().await;
@@ -229,6 +291,15 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         })
     }
 
+    /// Retrieves a user and their credentials by identifier (e.g., username or email).
+    ///
+    /// # Arguments
+    ///
+    /// * `identifier` - The unique identifier for the user.
+    ///
+    /// # Returns
+    ///
+    /// Returns [`Some(User)`] if found, or [`None`] if not found.
     async fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
         let mut conn = self.conn.lock().await;
         let rec = sqlx::query!(
@@ -252,6 +323,15 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         })
     }
 
+    /// Updates a user's credentials (identifier and password hash).
+    ///
+    /// # Arguments
+    ///
+    /// * `user` - The [`User`] struct with updated credentials.
+    ///
+    /// # Returns
+    ///
+    /// Returns [`Ok(())`] on success, or [`AuthError::DatabaseError`] on failure.
     async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
         // Convert String user_id to Uuid
         let cred_user_id = Uuid::parse_str(&user.credentials.user_id)
@@ -270,6 +350,15 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         Ok(())
     }
 
+    /// Deletes a user and their credentials from the database by user ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The user ID as a string (UUID format).
+    ///
+    /// # Returns
+    ///
+    /// Returns [`Ok(())`] on success, or [`AuthError::DatabaseError`] on failure.
     async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError> {
         let uuid = Uuid::parse_str(id).map_err(|e| AuthError::DatabaseError(e.to_string()))?;
         let mut conn = self.conn.lock().await;
