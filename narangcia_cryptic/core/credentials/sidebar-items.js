@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["plain_password"],"struct":["Credentials"]};
