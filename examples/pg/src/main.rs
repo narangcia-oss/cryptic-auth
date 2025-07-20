@@ -1,22 +1,22 @@
 // CLI Example for interacting with the Postgres user repository
 
 // # 1. Check schema validity
-// cargo run --example cli_example --bin pg -- "postgres://myuser:mypassword@localhost:5432/cryptic" check_schema
+// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" check_schema
 
 // # 2. Add a user (replace values as needed)
-// cargo run --example cli_example --bin pg -- "postgres://myuser:mypassword@localhost:5432/cryptic" add_user 11111111-1111-1111-1111-111111111111 alice@example.com myhashedpassword
+// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" add_user 11111111-1111-1111-1111-111111111111 alice@example.com myhashedpassword
 
 // # 3. Get user by ID
-// cargo run --example cli_example --bin pg -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_id 11111111-1111-1111-1111-111111111111
+// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_id 11111111-1111-1111-1111-111111111111
 
 // # 4. Get user by identifier
-// cargo run --example cli_example --bin pg -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_identifier alice@example.com
+// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_identifier alice@example.com
 
+use narangcia_cryptic::core::user::persistence::traits::UserRepository;
 use narangcia_cryptic::{core::user::User, postgres::PgUserRepo};
 use sqlx::PgConnection;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
-use tokio::runtime::Runtime;
 
 #[tokio::main]
 async fn main() {
@@ -30,6 +30,7 @@ async fn main() {
         eprintln!("  get_user_by_identifier <identifier>");
         return;
     }
+
     let db_url = &args[1];
     let command = &args[2];
 
@@ -43,8 +44,9 @@ async fn main() {
         eprintln!("Schema check failed: {e}");
         return;
     }
-    let mut conn = pool.acquire().await.expect("Failed to acquire connection for repo");
-    let repo = PgUserRepo::new(&mut conn)
+
+    let pg_connection: PgConnection = conn.detach();
+    let repo = PgUserRepo::new(pg_connection)
         .await
         .expect("Failed to create repo");
 
@@ -91,7 +93,7 @@ async fn main() {
             }
         }
         _ => {
-            eprintln!("Unknown command: {}", command);
+            eprintln!("Unknown command: {command}");
         }
     }
 }

@@ -1,0 +1,9 @@
+[package]
+name = "pg"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+narangcia-cryptic = { path = "../..", features = ["postgres"] }
+sqlx = { version = "0.8.6", features = ["runtime-async-std", "postgres"] }
+tokio = { version = "1.46.1", features = ["full"] }
