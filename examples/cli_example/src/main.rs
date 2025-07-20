@@ -16,34 +16,34 @@
 //! ### Build and Run
 //!
 //! ```bash
-//! cargo run --example basic_usage -- [COMMAND]
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- [COMMAND]
 //! ```
 //!
 //! ### Available Commands
 //!
 //! #### 1. User Registration
 //! ```bash
-//! cargo run --example basic_usage -- signup --username alice --password secret123
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- signup --username alice --password secret123
 //! ```
 //!
 //! #### 2. User Login
 //! ```bash
-//! cargo run --example basic_usage -- login --username alice --password secret123
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- login --username alice --password secret123
 //! ```
 //!
 //! #### 3. Token Validation
 //! ```bash
-//! cargo run --example basic_usage -- validate-token --token "your_jwt_token_here"
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- validate-token --token "your_jwt_token_here"
 //! ```
 //!
 //! #### 4. Token Refresh
 //! ```bash
-//! cargo run --example basic_usage -- refresh-token --refresh-token "your_refresh_token_here"
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- refresh-token --refresh-token "your_refresh_token_here"
 //! ```
 //!
 //! #### 5. Interactive Mode (Recommended)
 //! ```bash
-//! cargo run --example basic_usage -- interactive
+//! cargo run --manifest-path examples/cli_example/Cargo.toml -- interactive
 //! ```
 //!
 //! In interactive mode, you can run multiple commands in a single session, which allows
