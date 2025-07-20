@@ -8,24 +8,25 @@ use crate::{core::user::User, error::AuthError};
 use tokio::sync::Mutex;
 
 #[derive(Debug)]
+#[cfg(feature = "postgres")]
 pub struct PgUserRepo {
-    conn: Mutex<sqlx::PgConnection>, // Interior mutability for connection (async)
+    conn: Mutex<sqlx::PgConnection>, // Never use a connection pool directly, just a single connection. If you want to use a pool, wrap your repo in a pool-aware struct. This is a single connection meant to be mutable.
 }
 
 #[cfg(feature = "postgres")]
 impl PgUserRepo {
-    pub async fn new(conn: sqlx::PgConnection) -> Result<Self, crate::error::AuthError> {
-        // Full schema validation for cryptic_users and cryptic_credentials
+    pub async fn check_schema(
+        conn: &mut sqlx::PgConnection,
+    ) -> Result<(), crate::error::AuthError> {
         use sqlx::Row;
-        let mut conn = conn;
-
+        // Check if the cryptic_users table exists
         // Check cryptic_users table
         let user_cols = sqlx::query(
             r#"SELECT column_name, data_type, is_nullable
                 FROM information_schema.columns
                 WHERE table_name = 'cryptic_users'"#,
         )
-        .fetch_all(&mut conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(|e| AuthError::DatabaseError(format!("cryptic_users table missing: {e}")))?;
         let mut has_id = false;
@@ -50,7 +51,7 @@ impl PgUserRepo {
                   ON tc.constraint_name = kcu.constraint_name
                 WHERE tc.table_name = 'cryptic_users' AND tc.constraint_type = 'PRIMARY KEY'"#,
         )
-        .fetch_all(&mut conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(|e| AuthError::DatabaseError(format!("cryptic_users PK check failed: {e}")))?;
         let mut pk_ok = false;
@@ -72,7 +73,7 @@ impl PgUserRepo {
                 FROM information_schema.columns
                 WHERE table_name = 'cryptic_credentials'"#,
         )
-        .fetch_all(&mut conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials table missing: {e}")))?;
         let mut has_user_id = false;
@@ -105,7 +106,7 @@ impl PgUserRepo {
                   ON tc.constraint_name = kcu.constraint_name
                 WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'PRIMARY KEY'"#
         )
-        .fetch_all(&mut conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials PK check failed: {e}")))?;
         let mut cred_pk_ok = false;
@@ -129,7 +130,7 @@ impl PgUserRepo {
                   ON tc.constraint_name = ccu.constraint_name
                 WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'UNIQUE' AND ccu.column_name = 'identifier'"#
         )
-        .fetch_one(&mut conn)
+        .fetch_one(&mut *conn)
         .await
         .map_err(|_| AuthError::DatabaseError("cryptic_credentials.identifier is not unique".to_string()))?;
 
@@ -143,7 +144,7 @@ impl PgUserRepo {
                   ON tc.constraint_name = ccu.constraint_name
                 WHERE tc.table_name = 'cryptic_credentials' AND tc.constraint_type = 'FOREIGN KEY'"#
         )
-        .fetch_all(&mut conn)
+        .fetch_all(&mut *conn)
         .await
         .map_err(|e| AuthError::DatabaseError(format!("cryptic_credentials FK check failed: {e}")))?;
         let mut fk_ok = false;
@@ -160,6 +161,12 @@ impl PgUserRepo {
                 "cryptic_credentials.user_id does not reference cryptic_users.id".to_string(),
             ));
         }
+
+        Ok(())
+    }
+
+    pub async fn new(conn: sqlx::PgConnection) -> Result<Self, crate::error::AuthError> {
+        // Full schema validation for cryptic_users and cryptic_credentials
 
         Ok(Self {
             conn: Mutex::new(conn),

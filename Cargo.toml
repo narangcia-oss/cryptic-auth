@@ -46,7 +46,7 @@ tokio = { version = "1.46.1", features = ["full"], optional = true }
 
 [features]
 bare = []
-postgres = ["dep:sqlx", "dep:sqlx-postgres"]
+postgres = ["dep:sqlx", "dep:sqlx-postgres", "tokio"]
 web = ["axum", "tokio"]
 db = ["postgres"]
 full = ["db", "web"]
