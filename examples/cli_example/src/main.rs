@@ -86,13 +86,7 @@
 //!
 
 use clap::{Parser, Subcommand};
-use narangcia_cryptic::{
-    AuthService,
-    core::{
-        credentials::{Credentials, PlainPassword},
-        user::User,
-    },
-};
+use narangcia_cryptic::{AuthService, core::credentials::PlainPassword, CrypticUser as User};
 use std::io::{self, Write};
 
 #[derive(Parser)]
@@ -191,14 +185,13 @@ async fn signup_user(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("🔐 Creating new user account...");
 
-    let credentials = Credentials::from_plain_password(
+    let user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
+        uuid::Uuid::new_v4().to_string(),
         username.to_string(),
         PlainPassword::new(password.to_string()),
     )
     .await?;
-
-    let user = User::new(uuid::Uuid::new_v4().to_string(), credentials);
 
     match auth_service.signup(user).await {
         Ok(_) => {
