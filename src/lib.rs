@@ -8,12 +8,16 @@
 pub mod auth_service;
 pub mod core;
 pub mod error;
+#[cfg(feature = "postgres")]
+pub mod postgres;
+#[cfg(feature = "web")]
+pub mod web_axum;
 
 // Re-export key elements for easier use
 pub use auth_service::AuthService;
+pub use core::user::User as CrypticUser;
 pub use error::AuthError;
-
-// You can add other 'use' statements here as your crate grows
-// For example:
-// pub use user::{User, Credentials};
-// pub use token::TokenPair;
+#[cfg(feature = "web")]
+pub use web_axum::get_cryptic_axum_router;
+#[cfg(feature = "web")]
+pub use web_axum::start_server;

@@ -39,4 +39,7 @@ pub enum AuthError {
     MissingPersistentUserManager,
     #[error("Missing token manager")]
     MissingTokenManager,
+    #[cfg(feature = "postgres")]
+    #[error("Database error: {0}")]
+    DatabaseError(String),
 }

@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use super::traits::UserRepository;
 use crate::core::user::User;
 use std::sync::{Arc, Mutex};
@@ -17,27 +19,54 @@ impl InMemoryUserRepo {
     }
 }
 
-// Implémentation du trait pour notre dépôt en mémoire
+#[async_trait]
 impl UserRepository for InMemoryUserRepo {
-    fn add_user(&self, user: User) -> Result<(), String> {
+    async fn add_user(&self, user: User) -> Result<User, crate::error::AuthError> {
         let mut users = self
             .users
             .lock()
-            .map_err(|e| format!("Failed to lock users: {e}"))?;
-        users.push(user);
-        Ok(())
+            .map_err(|e| crate::error::AuthError::ServiceUnavailable(e.to_string()))?;
+        users.push(user.clone());
+        Ok(user.clone())
     }
 
-    fn get_user_by_id(&self, id: &str) -> Option<User> {
+    async fn get_user_by_id(&self, id: &str) -> Option<User> {
         let users = self.users.lock().ok()?; // Handle potential poisoning
         users.iter().find(|u| u.id == id).cloned()
     }
 
-    fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
+    async fn get_user_by_identifier(&self, identifier: &str) -> Option<User> {
         let users = self.users.lock().ok()?; // Handle potential poisoning
         users
             .iter()
             .find(|u| u.credentials.identifier == identifier)
             .cloned()
+    }
+
+    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
+        let mut users = self
+            .users
+            .lock()
+            .map_err(|e| crate::error::AuthError::ServiceUnavailable(e.to_string()))?;
+        if let Some(existing) = users.iter_mut().find(|u| u.id == user.id) {
+            *existing = user;
+            Ok(())
+        } else {
+            Err(crate::error::AuthError::UserNotFound)
+        }
+    }
+
+    async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError> {
+        let mut users = self
+            .users
+            .lock()
+            .map_err(|e| crate::error::AuthError::ServiceUnavailable(e.to_string()))?;
+        let len_before = users.len();
+        users.retain(|u| u.id != id);
+        if users.len() < len_before {
+            Ok(())
+        } else {
+            Err(crate::error::AuthError::UserNotFound)
+        }
     }
 }

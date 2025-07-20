@@ -5,8 +5,8 @@ use crate::core::credentials::{Credentials, PlainPassword};
 
 #[derive(Debug, Clone, Default)]
 pub struct User {
-    pub id: String,
-    pub credentials: Credentials,
+    pub id: String,               // Unique identifier for the user (preferably UUID)
+    pub credentials: Credentials, // User credentials, including hashed password and identifier
 }
 
 impl User {
@@ -23,7 +23,8 @@ impl User {
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
         let credentials =
-            Credentials::from_plain_password(manager, identifier, plain_password).await?;
+            Credentials::from_plain_password(manager, id.clone(), identifier, plain_password)
+                .await?;
 
         Ok(Self { id, credentials })
     }

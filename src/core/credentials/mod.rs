@@ -7,14 +7,16 @@ pub use plain_password::PlainPassword;
 
 #[derive(Debug, Clone, Default)]
 pub struct Credentials {
-    pub identifier: String,
-    pub password_hash: String,
+    pub user_id: String,       // Unique identifier for the user (preferably UUID)
+    pub identifier: String,    // Unique identifier for the user (preferably email or username)
+    pub password_hash: String, // Hashed password
 }
 
 impl Credentials {
     /// Creates credentials with an already calculated hash
-    pub fn new(identifier: String, password_hash: String) -> Self {
+    pub fn new(user_id: String, identifier: String, password_hash: String) -> Self {
         Self {
+            user_id,
             identifier,
             password_hash,
         }
@@ -23,6 +25,7 @@ impl Credentials {
     /// Creates credentials by hashing a plaintext password
     pub async fn from_plain_password(
         manager: &(dyn crate::core::password::SecurePasswordManager + Send + Sync),
+        user_id: String,
         identifier: String,
         plain_password: PlainPassword,
     ) -> Result<Self, crate::error::AuthError> {
@@ -32,6 +35,7 @@ impl Credentials {
             .map_err(|e| crate::error::AuthError::HashingError(format!("Couldn't hash : {e}")))?;
 
         Ok(Self {
+            user_id,
             identifier,
             password_hash,
         })
