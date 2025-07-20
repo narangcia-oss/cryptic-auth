@@ -1,3 +1,11 @@
+//! # Cryptic Benchmarks
+//!
+//! This file contains comprehensive Criterion benchmarks for the `narangcia_cryptic` crate.
+//! It covers hashing, password management, JWT token operations, user creation, repository operations,
+//! authentication service flows, credentials, and scaling scenarios.
+//!
+//! Each benchmark is grouped and documented for clarity and reproducibility.
+
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use narangcia_cryptic::{
     AuthService,
@@ -16,6 +24,8 @@ use std::{hint::black_box, sync::Arc};
 use tokio::runtime::Runtime;
 
 // --- Hash and Salt Benchmarks ---
+/// Benchmark for generating a secure salt using the cryptic core API.
+/// Measures the performance of random salt generation for password hashing.
 fn bench_generate_secure_salt(c: &mut Criterion) {
     c.bench_function("generate_secure_salt", |b| {
         b.iter(|| {
@@ -25,6 +35,8 @@ fn bench_generate_secure_salt(c: &mut Criterion) {
     });
 }
 
+/// Benchmark for hashing a password with Argon2.
+/// Evaluates the time taken to hash a static password with a random salt.
 fn bench_argon2_hash(c: &mut Criterion) {
     let hasher = Argon2Hasher::new();
     let password = b"benchmark_password_12345";
@@ -38,6 +50,8 @@ fn bench_argon2_hash(c: &mut Criterion) {
     });
 }
 
+/// Benchmark for verifying a password hash with Argon2.
+/// Measures the time to verify a correct password against a precomputed hash.
 fn bench_argon2_verify(c: &mut Criterion) {
     let hasher = Argon2Hasher::new();
     let password = b"benchmark_password_12345";
@@ -53,6 +67,8 @@ fn bench_argon2_verify(c: &mut Criterion) {
 }
 
 // --- JWT Token Benchmarks ---
+/// Benchmark for generating a JWT token pair (access and refresh tokens).
+/// Uses a static user ID and secret key for repeatability.
 fn bench_jwt_generate_token_pair(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let jwt_service = JwtTokenService::new("benchmark_secret_key_1234567890", 3600, 7200);
@@ -66,6 +82,8 @@ fn bench_jwt_generate_token_pair(c: &mut Criterion) {
     });
 }
 
+/// Benchmark for validating a JWT access token.
+/// Pre-generates a token pair and measures the validation time for the access token.
 fn bench_jwt_validate_access_token(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let jwt_service = JwtTokenService::new("benchmark_secret_key_1234567890", 3600, 7200);
@@ -83,6 +101,8 @@ fn bench_jwt_validate_access_token(c: &mut Criterion) {
     });
 }
 
+/// Benchmark for refreshing a JWT access token using a refresh token.
+/// Pre-generates a token pair and measures the refresh operation.
 fn bench_jwt_refresh_access_token(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let jwt_service = JwtTokenService::new("benchmark_secret_key_1234567890", 3600, 7200);
@@ -101,6 +121,8 @@ fn bench_jwt_refresh_access_token(c: &mut Criterion) {
 }
 
 // --- User Creation and Management Benchmarks ---
+/// Benchmark for creating a user with a plain password.
+/// Measures the time to hash and store a password during user creation.
 fn bench_user_creation_with_plain_password(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let password_manager = Arc::new(Argon2PasswordManager::default());
@@ -120,6 +142,8 @@ fn bench_user_creation_with_plain_password(c: &mut Criterion) {
 }
 
 // --- In-Memory Repository Benchmarks ---
+/// Benchmark for adding users to the in-memory repository.
+/// Pre-creates a set of users and measures the time to add a user to a new repository instance.
 fn bench_in_memory_repo_add_user(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let password_manager = Arc::new(Argon2PasswordManager::default());
@@ -158,6 +182,8 @@ fn bench_in_memory_repo_add_user(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmarks for in-memory repository operations: get by ID, get by identifier, and update user.
+/// Pre-populates the repository with 1000 users and measures the time for each operation.
 fn bench_in_memory_repo_operations(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let password_manager = Arc::new(Argon2PasswordManager::default());
@@ -215,6 +241,8 @@ fn bench_in_memory_repo_operations(c: &mut Criterion) {
 }
 
 // --- AuthService Benchmarks ---
+/// Benchmark for the AuthService signup flow.
+/// Measures the time to create a user and register them using the authentication service.
 fn bench_auth_service_signup(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
@@ -237,6 +265,8 @@ fn bench_auth_service_signup(c: &mut Criterion) {
     });
 }
 
+/// Benchmarks for the AuthService login flow.
+/// Includes both successful and failed login attempts for coverage.
 fn bench_auth_service_login(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let auth_service = AuthService::default();
@@ -278,6 +308,8 @@ fn bench_auth_service_login(c: &mut Criterion) {
 }
 
 // --- Credentials Benchmarks ---
+/// Benchmarks for credentials creation and password verification.
+/// Includes creation from a plain password, successful verification, and failed verification.
 fn bench_credentials_creation_and_verification(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let manager = Argon2PasswordManager::default();
@@ -328,6 +360,8 @@ fn bench_credentials_creation_and_verification(c: &mut Criterion) {
 }
 
 // --- Scaling Benchmarks ---
+/// Scaling benchmark for generating multiple JWT token pairs.
+/// Measures performance as the number of tokens increases (1, 10, 100, 1000).
 fn bench_jwt_scaling(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
 
@@ -357,6 +391,8 @@ fn bench_jwt_scaling(c: &mut Criterion) {
     group.finish();
 }
 
+/// Scaling benchmark for populating the in-memory repository with users.
+/// Measures performance as the number of users increases (10, 100, 1000, 10000).
 fn bench_repo_scaling(c: &mut Criterion) {
     let rt = Runtime::new().unwrap();
     let password_manager = Arc::new(Argon2PasswordManager::default());
@@ -393,7 +429,6 @@ fn bench_repo_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-// Group all benchmarks
 criterion_group!(
     hash_benches,
     bench_generate_secure_salt,
@@ -429,7 +464,6 @@ criterion_group!(
 
 criterion_group!(scaling_benches, bench_jwt_scaling, bench_repo_scaling);
 
-// Main entry point
 criterion_main!(
     hash_benches,
     jwt_benches,
