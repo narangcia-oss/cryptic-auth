@@ -17,7 +17,7 @@ Add this line to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-narangcia-cryptic = { version = "0.2.0", features = ["full"] }
+narangcia-cryptic = { version = "0.2.1", features = ["full"] }
 ```
 
 ## Development
