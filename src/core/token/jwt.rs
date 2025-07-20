@@ -1,20 +1,54 @@
+//! JWT token service implementation for authentication and authorization.
+//!
+//! This module provides a [`JwtTokenService`] struct that implements the [`TokenService`] trait,
+//! allowing for the creation, validation, and refreshing of JWT access and refresh tokens.
+//!
+//! # Features
+//! - Configurable access and refresh token durations
+//! - Secure token encoding and decoding using HMAC SHA-256
+//! - Custom error handling for token operations
+//!
+//! # Example
+//! ```rust
+//! use crate::core::token::jwt::JwtTokenService;
+//! let jwt_service = JwtTokenService::new("mysecret", 3600, 86400);
+//! ```
+
 use crate::core::token::claims::{AccessTokenClaims, Claims, RefreshTokenClaims};
 use crate::core::token::{TokenPair, TokenService};
 use crate::error::AuthError;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// JWT Token Service implementation
+/// Service for generating, validating, and refreshing JWT access and refresh tokens.
+///
+/// This struct encapsulates the cryptographic keys, algorithm, and token durations
+/// required for secure JWT operations.
 pub struct JwtTokenService {
+    /// Key used for encoding (signing) JWTs.
     encoding_key: EncodingKey,
+    /// Key used for decoding (verifying) JWTs.
     decoding_key: DecodingKey,
+    /// Algorithm used for signing and verifying JWTs.
     algorithm: Algorithm,
-    access_token_duration: u64,  // in seconds
-    refresh_token_duration: u64, // in seconds
+    /// Duration (in seconds) for which an access token is valid.
+    access_token_duration: u64,
+    /// Duration (in seconds) for which a refresh token is valid.
+    refresh_token_duration: u64,
 }
 
 impl JwtTokenService {
-    /// Creates a new JWT service with a secret key
+    /// Creates a new [`JwtTokenService`] with the given secret and token durations.
+    ///
+    /// # Arguments
+    /// * `secret` - The secret key used for signing and verifying tokens.
+    /// * `access_token_duration` - Access token validity duration in seconds.
+    /// * `refresh_token_duration` - Refresh token validity duration in seconds.
+    ///
+    /// # Example
+    /// ```rust
+    /// let service = JwtTokenService::new("mysecret", 3600, 86400);
+    /// ```
     pub fn new(secret: &str, access_token_duration: u64, refresh_token_duration: u64) -> Self {
         let key_bytes = secret.as_bytes();
 
@@ -27,7 +61,10 @@ impl JwtTokenService {
         }
     }
 
-    /// Gets the current timestamp
+    /// Returns the current UNIX timestamp in seconds.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenGeneration`] if the system time is before the UNIX epoch.
     fn current_timestamp() -> Result<usize, AuthError> {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -35,7 +72,13 @@ impl JwtTokenService {
             .map(|duration| duration.as_secs() as usize)
     }
 
-    /// Generates an access token
+    /// Generates a signed JWT access token for the given user ID.
+    ///
+    /// # Arguments
+    /// * `user_id` - The user identifier to embed in the token claims.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenGeneration`] if token creation fails.
     fn generate_access_token(&self, user_id: &str) -> Result<String, AuthError> {
         let now = Self::current_timestamp()?;
         let expiration = now + self.access_token_duration as usize;
@@ -53,7 +96,13 @@ impl JwtTokenService {
             .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode access token: {e}")))
     }
 
-    /// Generates a refresh token
+    /// Generates a signed JWT refresh token for the given user ID.
+    ///
+    /// # Arguments
+    /// * `user_id` - The user identifier to embed in the token claims.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenGeneration`] if token creation fails.
     fn generate_refresh_token(&self, user_id: &str) -> Result<String, AuthError> {
         let now = Self::current_timestamp()?;
         let expiration = now + self.refresh_token_duration as usize;
@@ -71,7 +120,16 @@ impl JwtTokenService {
             .map_err(|e| AuthError::TokenGeneration(format!("Failed to encode refresh token: {e}")))
     }
 
-    /// Validates a generic token
+    /// Validates a JWT and deserializes its claims.
+    ///
+    /// # Type Parameters
+    /// * `T` - The type of claims to deserialize (e.g., [`AccessTokenClaims`], [`RefreshTokenClaims`]).
+    ///
+    /// # Arguments
+    /// * `token` - The JWT string to validate and decode.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenExpired`], [`AuthError::InvalidToken`], or [`AuthError::TokenValidation`] on failure.
     fn validate_token<T>(&self, token: &str) -> Result<T, AuthError>
     where
         T: serde::de::DeserializeOwned,
@@ -95,7 +153,13 @@ impl JwtTokenService {
 
 #[async_trait::async_trait]
 impl TokenService for JwtTokenService {
-    /// Generates a token pair
+    /// Generates a new access and refresh token pair for the specified user.
+    ///
+    /// # Arguments
+    /// * `user_id` - The user identifier to embed in the token claims.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenGeneration`] if token creation fails.
     async fn generate_token_pair(&self, user_id: &str) -> Result<TokenPair, AuthError> {
         let access_token = self.generate_access_token(user_id)?;
         let refresh_token = self.generate_refresh_token(user_id)?;
@@ -106,7 +170,13 @@ impl TokenService for JwtTokenService {
         })
     }
 
-    /// Validates an access token
+    /// Validates an access token and returns its claims.
+    ///
+    /// # Arguments
+    /// * `token` - The JWT access token string to validate.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::TokenExpired`], [`AuthError::InvalidToken`], or [`AuthError::TokenValidation`] on failure.
     async fn validate_access_token(
         &self,
         token: &str,
@@ -115,7 +185,13 @@ impl TokenService for JwtTokenService {
         Ok(Box::new(claims))
     }
 
-    /// Refreshes an access token
+    /// Validates a refresh token and generates a new token pair if valid.
+    ///
+    /// # Arguments
+    /// * `refresh_token` - The JWT refresh token string to validate.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::InvalidToken`] if the token is not a refresh token, or other token errors.
     async fn refresh_access_token(&self, refresh_token: &str) -> Result<TokenPair, AuthError> {
         let refresh_claims: RefreshTokenClaims = self.validate_token(refresh_token)?;
 

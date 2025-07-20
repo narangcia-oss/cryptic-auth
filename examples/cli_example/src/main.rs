@@ -85,22 +85,42 @@
 //! - `JwtTokenService`: JWT token generation and validation
 //!
 
+//! # Cryptic CLI Example
+//!
+//! This file provides a command-line interface (CLI) for demonstrating the key features of the `narangcia-cryptic` authentication crate.
+//! It supports user registration, login, JWT token validation, token refresh, and an interactive mode for multi-command sessions.
+//!
+//! ## Features
+//! - User registration with secure password hashing
+//! - User login and JWT token generation
+//! - Token validation and claim extraction
+//! - Token refresh using refresh tokens
+//! - Interactive mode for multi-step workflows
+//!
+//! ## Usage
+//! See the module-level documentation and the `README.md` for detailed usage instructions.
+
 use clap::{Parser, Subcommand};
-use narangcia_cryptic::{AuthService, core::credentials::PlainPassword, CrypticUser as User};
+use narangcia_cryptic::{AuthService, CrypticUser as User, core::credentials::PlainPassword};
 use std::io::{self, Write};
 
+/// Command-line interface for the Cryptic authentication service.
+///
+/// Parses CLI arguments and dispatches to the appropriate subcommand.
 #[derive(Parser)]
 #[command(name = "cryptic-cli")]
 #[command(about = "A CLI example for the narangcia-cryptic authentication service")]
 #[command(version = "0.1.0")]
 struct Cli {
+    /// The subcommand to execute
     #[command(subcommand)]
     command: Commands,
 }
 
+/// Supported CLI subcommands for the Cryptic authentication service.
 #[derive(Subcommand)]
 enum Commands {
-    /// Register a new user
+    /// Register a new user with a username and password.
     Signup {
         /// Username/identifier for the user
         #[arg(short, long)]
@@ -109,7 +129,7 @@ enum Commands {
         #[arg(short, long)]
         password: Option<String>,
     },
-    /// Login with existing credentials
+    /// Login with existing credentials and receive JWT tokens.
     Login {
         /// Username/identifier for login
         #[arg(short, long)]
@@ -118,22 +138,25 @@ enum Commands {
         #[arg(short, long)]
         password: Option<String>,
     },
-    /// Validate a token
+    /// Validate an access token and display its claims.
     ValidateToken {
         /// The access token to validate
         #[arg(short, long)]
         token: String,
     },
-    /// Refresh an access token
+    /// Refresh an access token using a refresh token.
     RefreshToken {
         /// The refresh token to use
         #[arg(short, long)]
         refresh_token: String,
     },
-    /// Interactive mode - run multiple commands
+    /// Interactive mode - run multiple commands in a session.
     Interactive,
 }
 
+/// Entry point for the Cryptic CLI example.
+///
+/// Initializes logging, parses CLI arguments, and dispatches to the selected subcommand.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
@@ -165,6 +188,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Prompt for a password if not provided, or return the given password.
+///
+/// # Arguments
+/// * `password` - Optional password string. If `None`, prompt the user.
+/// * `prompt` - The prompt message to display if input is needed.
+///
+/// # Returns
+/// The password as a `String`.
 fn get_password_input(password: Option<String>, prompt: &str) -> Result<String, io::Error> {
     match password {
         Some(pwd) => Ok(pwd),
@@ -178,6 +209,15 @@ fn get_password_input(password: Option<String>, prompt: &str) -> Result<String, 
     }
 }
 
+/// Register a new user with the given username and password.
+///
+/// # Arguments
+/// * `auth_service` - Reference to the authentication service.
+/// * `username` - The username/identifier for the new user.
+/// * `password` - The password for the new user.
+///
+/// # Returns
+/// Result indicating success or error.
 async fn signup_user(
     auth_service: &AuthService,
     username: &str,
@@ -205,6 +245,15 @@ async fn signup_user(
     Ok(())
 }
 
+/// Log in with the given username and password, printing tokens on success.
+///
+/// # Arguments
+/// * `auth_service` - Reference to the authentication service.
+/// * `username` - The username/identifier for login.
+/// * `password` - The password for login.
+///
+/// # Returns
+/// Result indicating success or error.
 async fn login_user(
     auth_service: &AuthService,
     username: &str,
@@ -230,6 +279,14 @@ async fn login_user(
     Ok(())
 }
 
+/// Validate an access token and print its claims.
+///
+/// # Arguments
+/// * `auth_service` - Reference to the authentication service.
+/// * `token` - The access token to validate.
+///
+/// # Returns
+/// Result indicating success or error.
 async fn validate_token(
     auth_service: &AuthService,
     token: &str,
@@ -250,6 +307,14 @@ async fn validate_token(
     Ok(())
 }
 
+/// Refresh an access token using a refresh token.
+///
+/// # Arguments
+/// * `auth_service` - Reference to the authentication service.
+/// * `refresh_token` - The refresh token to use.
+///
+/// # Returns
+/// Result indicating success or error.
 async fn refresh_access_token(
     auth_service: &AuthService,
     refresh_token: &str,
@@ -270,6 +335,13 @@ async fn refresh_access_token(
     Ok(())
 }
 
+/// Run the interactive CLI mode, allowing multiple commands in a single session.
+///
+/// # Arguments
+/// * `auth_service` - Reference to the authentication service.
+///
+/// # Returns
+/// Result indicating success or error.
 async fn run_interactive_mode(
     auth_service: &AuthService,
 ) -> Result<(), Box<dyn std::error::Error>> {

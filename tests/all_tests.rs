@@ -1,8 +1,31 @@
+//! # Integration and Unit Tests for narangcia_cryptic
+//!
+//! This test module covers integration and unit tests for the main features of the `narangcia_cryptic` crate, including:
+//! - Hashing and salt generation
+//! - Authentication service (signup, login, JWT)
+//! - User persistence (in-memory repository)
+//! - AuthServiceVariables
+//! - Credentials and password management
+//!
+//! Each test is documented with its purpose and expected behavior.
+//!
+//! ## Usage
+//! Run all tests with:
+//! ```sh
+//! cargo test
+//! ```
+//!
+//! ## Note
+//! Some tests are asynchronous and require the Tokio runtime.
+//!
 // --- Hashing (Argon2Hasher, generate_secure_salt) Integration Tests ---
 use argon2::password_hash::SaltString;
 use narangcia_cryptic::core::hash::{Argon2Hasher, generate_secure_salt};
 
 #[test]
+/// Tests that `generate_secure_salt` produces a valid, non-empty, base64-encoded salt string.
+///
+/// Ensures the salt is valid for use with Argon2 and is not empty.
 fn test_generate_secure_salt() {
     let salt = generate_secure_salt();
     assert!(salt.is_ok());
@@ -14,6 +37,11 @@ fn test_generate_secure_salt() {
 }
 
 #[test]
+/// Tests the `Argon2Hasher` for correct password hashing and verification.
+///
+/// - Verifies that hashing a password produces a valid hash.
+/// - Checks that the correct password verifies successfully.
+/// - Checks that an incorrect password does not verify.
 fn test_argon2_hasher_hash_and_verify() {
     let hasher = Argon2Hasher::new();
     let password = b"test_password";
@@ -33,6 +61,11 @@ fn test_argon2_hasher_hash_and_verify() {
 use narangcia_cryptic::AuthService;
 
 #[tokio::test]
+/// Tests the `AuthService::signup` method for successful user signup.
+///
+/// - Creates a user with a plain password.
+/// - Signs up the user and expects success.
+/// - This test ensures the signup logic is implemented and works as expected.
 async fn test_auth_service_signup_not_implemented() {
     let auth_service = AuthService::default();
 
@@ -50,6 +83,10 @@ async fn test_auth_service_signup_not_implemented() {
 }
 
 #[tokio::test]
+/// Tests successful login with valid credentials using `AuthService`.
+///
+/// - Signs up a user.
+/// - Attempts login with correct credentials and expects success.
 async fn test_auth_service_login_success() {
     // Create a user first
     let auth_service = narangcia_cryptic::AuthService::default();
@@ -77,6 +114,10 @@ async fn test_auth_service_login_success() {
 }
 
 #[tokio::test]
+/// Tests login failure with invalid credentials using `AuthService`.
+///
+/// - Attempts login with non-existent user and wrong password.
+/// - Expects an error with the message "Invalid credentials provided."
 async fn test_auth_service_login_invalid_credentials() {
     let auth_service = narangcia_cryptic::AuthService::default();
 
@@ -94,6 +135,11 @@ use narangcia_cryptic::core::token::TokenService;
 use narangcia_cryptic::core::token::jwt::JwtTokenService;
 
 #[tokio::test]
+/// Tests JWT token pair generation and validation using `JwtTokenService`.
+///
+/// - Generates a token pair for a user.
+/// - Validates the access token and checks claims.
+/// - Refreshes the access token using the refresh token and validates the new token.
 async fn test_jwt_token_pair_generation_and_validation() {
     let secret = "super_secret_key";
     let access_token_duration = 60; // 1 minute
@@ -128,6 +174,10 @@ async fn test_jwt_token_pair_generation_and_validation() {
 }
 
 #[tokio::test]
+/// Tests refreshing an access token using a valid refresh token with `JwtTokenService`.
+///
+/// - Generates a token pair.
+/// - Refreshes the access token and validates the new access token's claims.
 async fn test_jwt_refresh_access_token() {
     let secret = "another_secret";
     let access_token_duration = 60;
@@ -155,6 +205,9 @@ async fn test_jwt_refresh_access_token() {
 }
 
 #[tokio::test]
+/// Tests validation of an invalid JWT token using `JwtTokenService`.
+///
+/// - Attempts to validate a malformed token and expects an error.
 async fn test_jwt_invalid_token() {
     let secret = "invalid_secret";
     let jwt_service = JwtTokenService::new(secret, 60, 120);
@@ -169,6 +222,11 @@ use narangcia_cryptic::core::user::User;
 use narangcia_cryptic::core::user::persistence::{InMemoryUserRepo, UserRepository};
 
 #[tokio::test]
+/// Tests adding and retrieving a user in `InMemoryUserRepo`.
+///
+/// - Adds a user to the repository.
+/// - Retrieves the user by ID and identifier.
+/// - Ensures the user data matches what was added.
 async fn test_in_memory_user_repo_add_and_get_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
@@ -194,6 +252,9 @@ async fn test_in_memory_user_repo_add_and_get_user() {
 }
 
 #[tokio::test]
+/// Tests updating a user in `InMemoryUserRepo`.
+///
+/// - Adds a user, updates the identifier, and verifies the update is persisted.
 async fn test_in_memory_user_repo_update_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
@@ -215,6 +276,10 @@ async fn test_in_memory_user_repo_update_user() {
 }
 
 #[tokio::test]
+/// Tests deleting a user from `InMemoryUserRepo`.
+///
+/// - Adds and deletes a user.
+/// - Ensures the user is removed and that deleting again returns an error.
 async fn test_in_memory_user_repo_delete_user() {
     let repo = InMemoryUserRepo::new();
     let auth_service = narangcia_cryptic::AuthService::default();
@@ -239,6 +304,9 @@ async fn test_in_memory_user_repo_delete_user() {
 use narangcia_cryptic::core::vars::AuthServiceVariables;
 
 #[test]
+/// Tests the default values of `AuthServiceVariables`.
+///
+/// - Ensures all fields are set to their default values.
 fn test_auth_service_variables_default() {
     let vars = AuthServiceVariables::default();
     assert_eq!(vars.secret_key, "");
@@ -247,6 +315,9 @@ fn test_auth_service_variables_default() {
 }
 
 #[test]
+/// Tests custom initialization of `AuthServiceVariables`.
+///
+/// - Ensures fields are set to the provided values.
 fn test_auth_service_variables_custom() {
     let vars = AuthServiceVariables {
         secret_key: "mysecret".to_string(),
@@ -259,6 +330,10 @@ fn test_auth_service_variables_custom() {
 }
 
 #[test]
+/// Tests cloning and debugging output of `AuthServiceVariables`.
+///
+/// - Ensures the clone matches the original.
+/// - Checks that the debug string contains the secret key.
 fn test_auth_service_variables_clone_and_debug() {
     let vars = AuthServiceVariables {
         secret_key: "clonekey".to_string(),
@@ -277,6 +352,10 @@ fn test_auth_service_variables_clone_and_debug() {
 use narangcia_cryptic::core::password::Argon2PasswordManager;
 
 #[tokio::test]
+/// Tests creating and verifying `Credentials` from a plain password.
+///
+/// - Ensures credentials are created and verified with the correct password.
+/// - Ensures verification fails with an incorrect password.
 async fn test_credentials_new_and_verify() {
     let identifier = "userX".to_string();
     let password = "testpass".to_string();
@@ -302,6 +381,9 @@ async fn test_credentials_new_and_verify() {
 }
 
 #[test]
+/// Tests the `Credentials` struct and `PlainPassword` creation.
+///
+/// - Ensures fields are set correctly and `PlainPassword` returns the correct string.
 fn test_credentials_struct_and_plain_password() {
     let user_id = "user_id".to_string();
     let identifier = "id".to_string();
@@ -316,6 +398,9 @@ fn test_credentials_struct_and_plain_password() {
 }
 
 #[test]
+/// Tests that `PlainPassword` zeroizes its memory on drop (best effort).
+///
+/// - Ensures the `ZeroizeOnDrop` implementation is present and compiles.
 fn test_plain_password_zeroize_on_drop() {
     use std::sync::{Arc, Mutex};
     // This test checks that PlainPassword zeroizes memory on drop (best effort)

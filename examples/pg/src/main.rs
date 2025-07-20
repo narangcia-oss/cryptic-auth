@@ -1,16 +1,72 @@
-// CLI Example for interacting with the Postgres user repository
-
-// # 1. Check schema validity
-// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" check_schema
-
-// # 2. Add a user (replace values as needed)
-// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" add_user 11111111-1111-1111-1111-111111111111 alice@example.com myhashedpassword
-
-// # 3. Get user by ID
-// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_id 11111111-1111-1111-1111-111111111111
-
-// # 4. Get user by identifier
-// cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_identifier alice@example.com
+//! # CLI Example for Interacting with the Postgres User Repository
+//!
+//! This binary provides a command-line interface for interacting with a Postgres-backed user repository.
+//! It demonstrates basic operations such as schema validation, user creation, and user retrieval.
+//!
+//! ## Usage
+//!
+//! ```sh
+//! cargo run --manifest-path examples/pg/Cargo.toml -- <DATABASE_URL> <command> [args]
+//! ```
+//!
+//! - `<DATABASE_URL>`: The Postgres connection string (e.g., `postgres://user:password@localhost:5432/cryptic`)
+//! - `<command>`: One of the supported commands (see below)
+//! - `[args]`: Additional arguments required by the command
+//!
+//! ## Supported Commands
+//!
+//! - `check_schema`: Validates the database schema for the user repository.
+//!   - Example:
+//!     ```sh
+//!     cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" check_schema
+//!     ```
+//!
+//! - `add_user <id> <identifier> <password_hash>`: Adds a new user to the repository.
+//!   - `<id>`: The user's UUID (e.g., `11111111-1111-1111-1111-111111111111`)
+//!   - `<identifier>`: The user's identifier (e.g., email address)
+//!   - `<password_hash>`: The hashed password for the user
+//!   - Example:
+//!     ```sh
+//!     cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" add_user 11111111-1111-1111-1111-111111111111 alice@example.com myhashedpassword
+//!     ```
+//!
+//! - `get_user_by_id <id>`: Retrieves a user by their UUID.
+//!   - Example:
+//!     ```sh
+//!     cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_id 11111111-1111-1111-1111-111111111111
+//!     ```
+//!
+//! - `get_user_by_identifier <identifier>`: Retrieves a user by their identifier (e.g., email).
+//!   - Example:
+//!     ```sh
+//!     cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_identifier alice@example.com
+//!     ```
+//!
+//! ## Example
+//!
+//! ```sh
+//! # Check schema
+//! cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" check_schema
+//!
+//! # Add a user
+//! cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" add_user 11111111-1111-1111-1111-111111111111 alice@example.com myhashedpassword
+//!
+//! # Get user by ID
+//! cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_id 11111111-1111-1111-1111-111111111111
+//!
+//! # Get user by identifier
+//! cargo run --manifest-path examples/pg/Cargo.toml -- "postgres://myuser:mypassword@localhost:5432/cryptic" get_user_by_identifier alice@example.com
+//! ```
+//!
+//! ## Notes
+//!
+//! - This example is intended for demonstration and development purposes.
+//! - Ensure the database schema is up to date before running commands.
+//! - Passwords should be securely hashed before being stored.
+//!
+//! ---
+//!
+//! See the project README for more details.
 
 use narangcia_cryptic::core::user::persistence::traits::UserRepository;
 use narangcia_cryptic::{core::user::User, postgres::PgUserRepo};
