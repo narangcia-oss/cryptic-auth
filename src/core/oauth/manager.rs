@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
-    RedirectUrl, RefreshToken, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
+    EndpointSet, RedirectUrl, RefreshToken, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
     basic::BasicClient, basic::BasicTokenType,
 };
 use reqwest::Client;
@@ -19,6 +19,18 @@ use super::store::{OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2UserInfo};
 use crate::AuthError;
 
 type OAuth2TokenResponse = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
+type ConfiguredBasicClient = oauth2::Client<
+    oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
+    oauth2::StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
+    oauth2::basic::BasicTokenIntrospectionResponse,
+    oauth2::StandardRevocableToken,
+    oauth2::basic::BasicRevocationErrorResponse,
+    EndpointSet,
+    oauth2::EndpointNotSet,
+    oauth2::EndpointNotSet,
+    oauth2::EndpointNotSet,
+    EndpointSet,
+>;
 
 /// OAuth2 Manager that implements the OAuth2Service trait
 pub struct OAuth2Manager {
@@ -44,7 +56,7 @@ impl OAuth2Manager {
     }
 
     /// Gets the OAuth2 client for a given provider
-    fn get_client(&self, provider: OAuth2Provider) -> Result<BasicClient, AuthError> {
+    fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
             AuthError::ConfigError(format!("No config found for provider: {:?}", provider))
         })?;
@@ -55,14 +67,14 @@ impl OAuth2Manager {
         let token_url = TokenUrl::new(config.token_url(provider).to_string())
             .map_err(|e| AuthError::ConfigError(format!("Invalid token URL: {}", e)))?;
 
+        let redirect_url = RedirectUrl::new(config.redirect_uri.clone())
+            .map_err(|e| AuthError::ConfigError(format!("Invalid redirect URL: {}", e)))?;
+
         let client = BasicClient::new(ClientId::new(config.client_id.clone()))
             .set_client_secret(ClientSecret::new(config.client_secret.clone()))
             .set_auth_uri(auth_url)
             .set_token_uri(token_url)
-            .set_redirect_uri(
-                RedirectUrl::new(config.redirect_uri.clone())
-                    .map_err(|e| AuthError::ConfigError(format!("Invalid redirect URI: {}", e)))?,
-            );
+            .set_redirect_uri(redirect_url);
 
         Ok(client)
     }
@@ -232,7 +244,7 @@ impl OAuth2Service for OAuth2Manager {
 
         let token_result = client
             .exchange_code(AuthorizationCode::new(code.to_string()))
-            .request_async(async_http_client)
+            .request_async(&reqwest::Client::new())
             .await
             .map_err(|e| AuthError::OAuthTokenExchange(format!("Token exchange failed: {}", e)))?;
 
@@ -302,7 +314,7 @@ impl OAuth2Service for OAuth2Manager {
 
         let token_result = client
             .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
-            .request_async(async_http_client)
+            .request_async(&reqwest::Client::new())
             .await
             .map_err(|e| AuthError::OAuthTokenExchange(format!("Token refresh failed: {}", e)))?;
 
