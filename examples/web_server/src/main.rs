@@ -142,8 +142,5 @@ async fn main() {
     env_logger::init();
 
     let auth_service = Arc::new(AuthService::default());
-    #[cfg(feature = "web")]
     start_server(auth_service, None).await;
-    #[cfg(not(feature = "web"))]
-    println!("Please enable the 'web' feature to run the web server example.");
 }
