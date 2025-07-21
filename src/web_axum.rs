@@ -1,14 +1,22 @@
 //! Web server and HTTP API integration for Cryptic using Axum.
 //!
 //! This module provides the Axum-based web server and HTTP API endpoints for authentication,
-//! user management, and token operations. It exposes routes for signup, login, health check,
-//! token refresh, and token validation, and connects them to the core authentication service.
+//! user management, token operations, and OAuth2 integration. It exposes routes for signup,
+//! login, health check, token refresh, token validation, OAuth2 authorization, and OAuth2
+//! callbacks, connecting them to the core authentication service.
 //!
 //! All endpoints expect and return JSON. Error responses are also JSON-encoded.
 //!
 //! # Features
 //! - Only compiled and available with the `web` feature enabled.
 //! - Designed for use with the `AuthService` abstraction.
+//! - Full OAuth2 support for Google, GitHub, Discord, and Microsoft.
+//!
+//! # OAuth2 Flow
+//! 1. GET `/oauth/{provider}/auth?state=...&scopes=...` - Generate authorization URL
+//! 2. User is redirected to provider for authorization
+//! 3. Provider redirects back to GET `/oauth/{provider}/callback?code=...&state=...`
+//! 4. Or use POST `/oauth/login` or `/oauth/signup` with code and state
 //!
 //! # Example
 //! ```no_run
@@ -21,7 +29,10 @@
 //! ```
 use crate::auth_service::AuthService;
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+};
 use serde::Deserialize;
 use std::sync::Arc;
 
@@ -29,7 +40,8 @@ use std::sync::Arc;
 /// Starts the Axum web server with all authentication routes.
 ///
 /// Binds to `0.0.0.0:3000` and serves the API endpoints for signup, login, health check,
-/// token refresh, and token validation. This function does not return unless the server fails.
+/// token refresh, token validation, and OAuth2 integration (authorization URLs, callbacks,
+/// OAuth login/signup). This function does not return unless the server fails.
 ///
 /// # Arguments
 /// * `auth_service` - An `Arc` to the shared `AuthService` instance used for all authentication logic.
@@ -46,6 +58,10 @@ pub async fn start_server(auth_service: Arc<AuthService>) {
         .route("/health", get(health_handler).post(health_handler))
         .route("/token/refresh", post(refresh_token_handler))
         .route("/token/validate", post(validate_token_handler))
+        .route("/oauth/:provider/auth", get(oauth_auth_handler))
+        .route("/oauth/:provider/callback", get(oauth_callback_handler))
+        .route("/oauth/signup", post(oauth_signup_handler))
+        .route("/oauth/login", post(oauth_login_handler))
         .with_state(auth_service);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000));
@@ -58,12 +74,14 @@ pub async fn start_server(auth_service: Arc<AuthService>) {
 /// Returns an Axum `Router` with all Cryptic authentication routes registered.
 ///
 /// This is useful for integrating Cryptic's API into an existing Axum application or for testing.
+/// Includes all authentication endpoints: credentials-based signup/login, token operations,
+/// and OAuth2 integration with support for Google, GitHub, Discord, and Microsoft.
 ///
 /// # Arguments
 /// * `auth_service` - An `Arc` to the shared `AuthService` instance.
 ///
 /// # Returns
-/// An Axum `Router` with all authentication and token endpoints.
+/// An Axum `Router` with all authentication, token, and OAuth2 endpoints.
 pub fn get_cryptic_axum_router(auth_service: Arc<AuthService>) -> Router {
     use axum::routing::{get, post};
     Router::new()
@@ -72,6 +90,10 @@ pub fn get_cryptic_axum_router(auth_service: Arc<AuthService>) -> Router {
         .route("/health", get(health_handler).post(health_handler))
         .route("/token/refresh", post(refresh_token_handler))
         .route("/token/validate", post(validate_token_handler))
+        .route("/oauth/{provider}/auth", get(oauth_auth_handler))
+        .route("/oauth/{provider}/callback", get(oauth_callback_handler))
+        .route("/oauth/signup", post(oauth_signup_handler))
+        .route("/oauth/login", post(oauth_login_handler))
         .with_state(auth_service)
 }
 
@@ -271,6 +293,285 @@ async fn validate_token_handler(
             })
             .to_string(),
         },
+        Err(e) => serde_json::json!({
+            "error": format!("Invalid request body: {}", e)
+        })
+        .to_string(),
+    }
+}
+
+#[cfg(feature = "web")]
+/// HTTP handler for the `/oauth/{provider}/auth` endpoint.
+///
+/// Generates an OAuth2 authorization URL for the specified provider.
+/// Accepts query parameters for state and optional scopes.
+///
+/// # Query Parameters
+/// - `state`: Required state parameter for CSRF protection
+/// - `scopes`: Optional comma-separated list of additional scopes
+///
+/// # Response JSON
+/// - Success: `{ "auth_url": "..." }`
+/// - Error: `{ "error": "..." }`
+async fn oauth_auth_handler(
+    State(_auth): State<Arc<AuthService>>,
+    Path(provider_str): Path<String>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> String {
+    // Parse the provider from the path parameter
+    let provider = match provider_str.to_lowercase().as_str() {
+        "google" => crate::core::oauth::store::OAuth2Provider::Google,
+        "github" => crate::core::oauth::store::OAuth2Provider::GitHub,
+        "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
+        "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
+        _ => {
+            return serde_json::json!({
+                "error": format!("Unsupported OAuth2 provider: {}", provider_str)
+            })
+            .to_string();
+        }
+    };
+
+    // Get the state parameter (required)
+    let state = match params.get("state") {
+        Some(state) => state,
+        None => {
+            return serde_json::json!({
+                "error": "Missing required 'state' parameter"
+            })
+            .to_string();
+        }
+    };
+
+    // Parse optional scopes parameter
+    let scopes = params
+        .get("scopes")
+        .map(|s| s.split(',').map(|scope| scope.trim().to_string()).collect());
+
+    // Generate the OAuth2 authorization URL
+    match _auth
+        .generate_oauth2_auth_url(provider, state, scopes)
+        .await
+    {
+        Ok(auth_url) => serde_json::json!({
+            "auth_url": auth_url
+        })
+        .to_string(),
+        Err(e) => serde_json::json!({
+            "error": e.to_string()
+        })
+        .to_string(),
+    }
+}
+
+#[cfg(feature = "web")]
+/// HTTP handler for the `/oauth/{provider}/callback` endpoint.
+///
+/// Handles OAuth2 callback from providers. This endpoint would typically be called
+/// by the OAuth2 provider after user authorization. Returns user info and tokens.
+///
+/// # Query Parameters
+/// - `code`: The authorization code from the provider
+/// - `state`: The state parameter for CSRF verification
+///
+/// # Response JSON
+/// - Success: `{ "id": "...", "access_token": "...", "refresh_token": "..." }`
+/// - Error: `{ "error": "..." }`
+async fn oauth_callback_handler(
+    State(_auth): State<Arc<AuthService>>,
+    Path(provider_str): Path<String>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> String {
+    // Parse the provider from the path parameter
+    let provider = match provider_str.to_lowercase().as_str() {
+        "google" => crate::core::oauth::store::OAuth2Provider::Google,
+        "github" => crate::core::oauth::store::OAuth2Provider::GitHub,
+        "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
+        "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
+        _ => {
+            return serde_json::json!({
+                "error": format!("Unsupported OAuth2 provider: {}", provider_str)
+            })
+            .to_string();
+        }
+    };
+
+    // Get required parameters
+    let code = match params.get("code") {
+        Some(code) => code,
+        None => {
+            return serde_json::json!({
+                "error": "Missing required 'code' parameter"
+            })
+            .to_string();
+        }
+    };
+
+    let state = match params.get("state") {
+        Some(state) => state,
+        None => {
+            return serde_json::json!({
+                "error": "Missing required 'state' parameter"
+            })
+            .to_string();
+        }
+    };
+
+    // Use the login method with OAuth2
+    match _auth
+        .login(crate::auth_service::LoginMethod::OAuth2 {
+            provider,
+            code: code.clone(),
+            state: state.clone(),
+        })
+        .await
+    {
+        Ok((user, tokens)) => serde_json::json!({
+            "id": user.id,
+            "access_token": tokens.access_token,
+            "refresh_token": tokens.refresh_token
+        })
+        .to_string(),
+        Err(e) => serde_json::json!({
+            "error": e.to_string()
+        })
+        .to_string(),
+    }
+}
+
+#[cfg(feature = "web")]
+/// HTTP handler for the `/oauth/signup` endpoint.
+///
+/// Handles OAuth2 signup/registration using an authorization code.
+/// Creates a new user account or links to existing account.
+///
+/// # Request JSON
+/// ```json
+/// { "provider": "google|github|discord|microsoft", "code": "string", "state": "string" }
+/// ```
+///
+/// # Response JSON
+/// - Success: `{ "id": "...", "access_token": "...", "refresh_token": "..." }`
+/// - Error: `{ "error": "..." }`
+async fn oauth_signup_handler(
+    State(_auth): State<Arc<AuthService>>,
+    Json(_body): Json<serde_json::Value>,
+) -> String {
+    #[derive(Deserialize)]
+    struct OAuth2SignupRequest {
+        provider: String,
+        code: String,
+        state: String,
+    }
+
+    let req: Result<OAuth2SignupRequest, _> = serde_json::from_value(_body);
+    match req {
+        Ok(signup) => {
+            // Parse the provider
+            let provider = match signup.provider.to_lowercase().as_str() {
+                "google" => crate::core::oauth::store::OAuth2Provider::Google,
+                "github" => crate::core::oauth::store::OAuth2Provider::GitHub,
+                "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
+                "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
+                _ => {
+                    return serde_json::json!({
+                        "error": format!("Unsupported OAuth2 provider: {}", signup.provider)
+                    })
+                    .to_string();
+                }
+            };
+
+            // Use the unified signup method with OAuth2
+            match _auth
+                .signup(crate::auth_service::SignupMethod::OAuth2 {
+                    provider,
+                    code: signup.code,
+                    state: signup.state,
+                })
+                .await
+            {
+                Ok((user, tokens)) => serde_json::json!({
+                    "id": user.id,
+                    "access_token": tokens.access_token,
+                    "refresh_token": tokens.refresh_token
+                })
+                .to_string(),
+                Err(e) => serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
+            }
+        }
+        Err(e) => serde_json::json!({
+            "error": format!("Invalid request body: {}", e)
+        })
+        .to_string(),
+    }
+}
+
+#[cfg(feature = "web")]
+/// HTTP handler for the `/oauth/login` endpoint.
+///
+/// Handles OAuth2 login using an authorization code.
+/// Authenticates existing user or creates account if needed.
+///
+/// # Request JSON
+/// ```json
+/// { "provider": "google|github|discord|microsoft", "code": "string", "state": "string" }
+/// ```
+///
+/// # Response JSON
+/// - Success: `{ "id": "...", "access_token": "...", "refresh_token": "..." }`
+/// - Error: `{ "error": "..." }`
+async fn oauth_login_handler(
+    State(_auth): State<Arc<AuthService>>,
+    Json(_body): Json<serde_json::Value>,
+) -> String {
+    #[derive(Deserialize)]
+    struct OAuth2LoginRequest {
+        provider: String,
+        code: String,
+        state: String,
+    }
+
+    let req: Result<OAuth2LoginRequest, _> = serde_json::from_value(_body);
+    match req {
+        Ok(login) => {
+            // Parse the provider
+            let provider = match login.provider.to_lowercase().as_str() {
+                "google" => crate::core::oauth::store::OAuth2Provider::Google,
+                "github" => crate::core::oauth::store::OAuth2Provider::GitHub,
+                "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
+                "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
+                _ => {
+                    return serde_json::json!({
+                        "error": format!("Unsupported OAuth2 provider: {}", login.provider)
+                    })
+                    .to_string();
+                }
+            };
+
+            // Use the unified login method with OAuth2
+            match _auth
+                .login(crate::auth_service::LoginMethod::OAuth2 {
+                    provider,
+                    code: login.code,
+                    state: login.state,
+                })
+                .await
+            {
+                Ok((user, tokens)) => serde_json::json!({
+                    "id": user.id,
+                    "access_token": tokens.access_token,
+                    "refresh_token": tokens.refresh_token
+                })
+                .to_string(),
+                Err(e) => serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
+            }
+        }
         Err(e) => serde_json::json!({
             "error": format!("Invalid request body: {}", e)
         })
