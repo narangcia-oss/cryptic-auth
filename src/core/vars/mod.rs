@@ -17,5 +17,4 @@ pub struct AuthServiceVariables {
 
     /// The duration (in seconds) for which a refresh token is valid.
     pub refresh_token_expiration: u64,
-
 }

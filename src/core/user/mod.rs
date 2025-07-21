@@ -37,7 +37,7 @@ use std::collections::HashMap;
 ///
 /// The `User` struct contains a unique identifier and associated credentials.
 /// The credentials include the user's identifier (e.g., username or email) and password hash.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct User {
     /// Unique identifier for the user (preferably a UUID).
     pub id: String,
@@ -49,6 +49,19 @@ pub struct User {
     pub created_at: chrono::NaiveDateTime,
     /// Last updated timestamp
     pub updated_at: chrono::NaiveDateTime,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        let now = chrono::Utc::now().naive_utc();
+        Self {
+            id: String::new(),
+            credentials: None,
+            oauth_accounts: HashMap::new(),
+            created_at: now,
+            updated_at: now,
+        }
+    }
 }
 
 impl User {

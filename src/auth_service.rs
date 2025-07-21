@@ -141,7 +141,7 @@ impl AuthService {
             .credentials
             .as_ref()
             .ok_or(AuthError::InvalidCredentials)?;
-            
+
         let is_valid = self
             .password_manager
             .verify_password(plain_password, &credentials.password_hash)

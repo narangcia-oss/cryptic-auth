@@ -244,7 +244,7 @@ async fn test_in_memory_user_repo_add_and_get_user() {
     assert!(fetched.is_some());
     let fetched = fetched.unwrap();
     assert_eq!(fetched.id, "id1");
-    assert_eq!(fetched.credentials.identifier, "user1");
+    assert_eq!(fetched.credentials.as_ref().unwrap().identifier, "user1");
     // By identifier
     let by_identifier = repo.get_user_by_identifier("user1").await;
     assert!(by_identifier.is_some());
@@ -268,11 +268,14 @@ async fn test_in_memory_user_repo_update_user() {
     .expect("Failed to create user");
     repo.add_user(user.clone()).await.expect("Add user failed");
     // Update identifier
-    user.credentials.identifier = "user2_updated".to_string();
+    user.credentials.as_mut().unwrap().identifier = "user2_updated".to_string();
     let update_result = repo.update_user(user.clone()).await;
     assert!(update_result.is_ok());
     let fetched = repo.get_user_by_id("id2").await.unwrap();
-    assert_eq!(fetched.credentials.identifier, "user2_updated");
+    assert_eq!(
+        fetched.credentials.as_ref().unwrap().identifier,
+        "user2_updated"
+    );
 }
 
 #[tokio::test]

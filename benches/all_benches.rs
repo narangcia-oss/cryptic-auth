@@ -231,7 +231,8 @@ fn bench_in_memory_repo_operations(c: &mut Criterion) {
     group.bench_function("update_user", |b| {
         b.to_async(&rt).iter(|| async {
             let mut user = users[500].clone();
-            user.credentials.identifier = format!("updated_username_{}", black_box(500));
+            user.credentials.as_mut().unwrap().identifier =
+                format!("updated_username_{}", black_box(500));
             let result = repo.update_user(black_box(user)).await;
             black_box(result)
         })

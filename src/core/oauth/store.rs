@@ -88,7 +88,9 @@ impl OAuth2Config {
             OAuth2Provider::Google => "https://accounts.google.com/o/oauth2/v2/auth",
             OAuth2Provider::GitHub => "https://github.com/login/oauth/authorize",
             OAuth2Provider::Discord => "https://discord.com/api/oauth2/authorize",
-            OAuth2Provider::Microsoft => "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            OAuth2Provider::Microsoft => {
+                "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+            }
         }
     }
 
@@ -97,7 +99,9 @@ impl OAuth2Config {
             OAuth2Provider::Google => "https://oauth2.googleapis.com/token",
             OAuth2Provider::GitHub => "https://github.com/login/oauth/access_token",
             OAuth2Provider::Discord => "https://discord.com/api/oauth2/token",
-            OAuth2Provider::Microsoft => "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            OAuth2Provider::Microsoft => {
+                "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+            }
         }
     }
 

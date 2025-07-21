@@ -234,10 +234,12 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         // Convert String IDs to Uuid
         let user_id =
             Uuid::parse_str(&user.id).map_err(|e| AuthError::DatabaseError(e.to_string()))?;
-        
-        let credentials = user.credentials.as_ref()
+
+        let credentials = user
+            .credentials
+            .as_ref()
             .ok_or_else(|| AuthError::DatabaseError("User has no credentials".to_string()))?;
-            
+
         let cred_user_id = Uuid::parse_str(&credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
 
@@ -343,9 +345,11 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     ///
     /// Returns [`Ok(())`] on success, or [`AuthError::DatabaseError`] on failure.
     async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
-        let credentials = user.credentials.as_ref()
+        let credentials = user
+            .credentials
+            .as_ref()
             .ok_or_else(|| AuthError::DatabaseError("User has no credentials".to_string()))?;
-            
+
         // Convert String user_id to Uuid
         let cred_user_id = Uuid::parse_str(&credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
