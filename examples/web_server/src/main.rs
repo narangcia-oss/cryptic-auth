@@ -11,7 +11,7 @@
 //! To run the example, use the following command:
 //!
 //! ```bash
-//! cargo run --example web_server --features web
+//! cargo run --manifest-path examples/web_server/Cargo.toml
 //! ```
 //!
 //! The server will start and listen on `http://0.0.0.0:3000`.
