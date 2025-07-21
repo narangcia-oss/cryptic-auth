@@ -52,10 +52,7 @@ impl Default for AuthService {
                 vars.token_expiration,
                 vars.refresh_token_expiration,
             )),
-            #[cfg(feature = "oauth2")]
             oauth2_manager: Box::new(crate::core::oauth::manager::OAuth2Manager::default()),
-            #[cfg(not(feature = "oauth2"))]
-            oauth2_manager: Box::new(crate::core::oauth::DummyOAuth2Manager::default()),
         }
     }
 }
@@ -101,16 +98,7 @@ impl AuthService {
         };
         let oauth_manager = match oauth2_manager {
             Some(manager) => manager,
-            None => {
-                #[cfg(feature = "oauth2")]
-                {
-                    Box::new(crate::core::oauth::manager::OAuth2Manager::default())
-                }
-                #[cfg(not(feature = "oauth2"))]
-                {
-                    Box::new(crate::core::oauth::DummyOAuth2Manager::default())
-                }
-            }
+            None => Box::new(crate::core::oauth::manager::OAuth2Manager::default()),
         };
 
         Ok(AuthService {
