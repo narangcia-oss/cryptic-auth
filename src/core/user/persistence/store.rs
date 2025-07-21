@@ -165,9 +165,13 @@ impl UserRepository for PersistentUsers {
         provider_user_id: &str,
     ) -> Option<User> {
         match self {
-            PersistentUsers::InMemory(repo) => repo.get_user_by_oauth_id(provider, provider_user_id).await,
+            PersistentUsers::InMemory(repo) => {
+                repo.get_user_by_oauth_id(provider, provider_user_id).await
+            }
             #[cfg(feature = "postgres")]
-            PersistentUsers::PostgresDatabase(repo) => repo.get_user_by_oauth_id(provider, provider_user_id).await,
+            PersistentUsers::PostgresDatabase(repo) => {
+                repo.get_user_by_oauth_id(provider, provider_user_id).await
+            }
         }
     }
 }
