@@ -26,11 +26,14 @@ serde = { version = "1.0.219", features = ["derive"] }
 # Pour rendre les méthodes de trait async.
 async-trait = "0.1.88"
 # Pour la génération de nombres aléatoires sécurisés (sels, etc.).
-rand = { version = "0.9.1" }
+rand = { version = "0.9.2" }
 # Pour la journalisation professionnelle (niveau infos/erreurs).
 log = "0.4.27"
 zeroize = { version = "1.8.1", features = ["derive"] }
 serde_json = "1.0.141"
+# OAuth2 support
+oauth2 = { version = "5.0.0", optional = true }
+reqwest = { version = "0.12.22", features = ["json"], optional = true }
 
 # --- Optional dependencies for features ---
 sqlx = { version = "0.8.6", features = [
@@ -49,8 +52,9 @@ tokio = { version = "1.46.1", features = ["full"], optional = true }
 bare = []
 postgres = ["dep:sqlx", "dep:sqlx-postgres", "tokio"]
 web = ["axum", "tokio"]
+oauth2 = ["dep:oauth2", "dep:reqwest", "tokio"]
 db = ["postgres"]
-full = ["db", "web"]
+full = ["db", "web", "oauth2"]
 
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples

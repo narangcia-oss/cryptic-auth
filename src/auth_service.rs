@@ -52,6 +52,10 @@ impl Default for AuthService {
                 vars.token_expiration,
                 vars.refresh_token_expiration,
             )),
+            #[cfg(feature = "oauth2")]
+            oauth2_manager: Box::new(crate::core::oauth::manager::OAuth2Manager::default()),
+            #[cfg(not(feature = "oauth2"))]
+            oauth2_manager: Box::new(crate::core::oauth::DummyOAuth2Manager::default()),
         }
     }
 }
@@ -64,6 +68,7 @@ impl AuthService {
     /// * `password_manager` - Optional custom password manager. If `None`, uses Argon2 by default.
     /// * `persistent_users_manager` - Optional custom user repository. If `None`, uses in-memory repository by default.
     /// * `token_manager` - Optional custom token service. If `None`, uses JWT token service by default.
+    /// * `oauth2_manager` - Optional custom OAuth2 service. If `None`, uses default OAuth2 manager.
     ///
     /// # Returns
     /// Returns an [`AuthService`] instance or an [`AuthError`] if construction fails.
@@ -76,6 +81,7 @@ impl AuthService {
             Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
         >,
         token_manager: Option<Box<dyn crate::core::token::TokenService + Send + Sync>>,
+        oauth2_manager: Option<Box<dyn crate::core::oauth::OAuth2Service + Send + Sync>>,
     ) -> Result<Self, AuthError> {
         let pwd_manager = match password_manager {
             Some(manager) => manager,
@@ -93,12 +99,26 @@ impl AuthService {
                 vars.refresh_token_expiration,
             )),
         };
+        let oauth_manager = match oauth2_manager {
+            Some(manager) => manager,
+            None => {
+                #[cfg(feature = "oauth2")]
+                {
+                    Box::new(crate::core::oauth::manager::OAuth2Manager::default())
+                }
+                #[cfg(not(feature = "oauth2"))]
+                {
+                    Box::new(crate::core::oauth::DummyOAuth2Manager::default())
+                }
+            }
+        };
 
         Ok(AuthService {
             vars,
             password_manager: pwd_manager,
             persistent_users_manager: pum,
             token_manager: tk_manager,
+            oauth2_manager: oauth_manager,
         })
     }
 
@@ -253,5 +273,147 @@ impl AuthService {
             .get_user_by_id(&user_id)
             .await
             .ok_or(AuthError::UserNotFound)
+    }
+
+    // OAuth2 Methods
+
+    /// Generates an OAuth2 authorization URL for the specified provider.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider to generate the URL for.
+    /// * `state` - A state parameter for CSRF protection.
+    /// * `scopes` - Optional additional scopes beyond the default ones.
+    ///
+    /// # Returns
+    /// Returns the authorization URL as a `String` if successful, or an [`AuthError`] if generation fails.
+    pub async fn generate_oauth2_auth_url(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        state: &str,
+        scopes: Option<Vec<String>>,
+    ) -> Result<String, AuthError> {
+        self.oauth2_manager
+            .generate_auth_url(provider, state, scopes)
+            .await
+    }
+
+    /// Exchanges an OAuth2 authorization code for an access token.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider.
+    /// * `code` - The authorization code received from the provider.
+    /// * `state` - The state parameter for verification.
+    ///
+    /// # Returns
+    /// Returns an [`OAuth2Token`] if successful, or an [`AuthError`] if the token exchange fails.
+    pub async fn exchange_oauth2_code_for_token(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        code: &str,
+        state: &str,
+    ) -> Result<crate::core::oauth::store::OAuth2Token, AuthError> {
+        self.oauth2_manager
+            .exchange_code_for_token(provider, code, state)
+            .await
+    }
+
+    /// Fetches user information from an OAuth2 provider using an access token.
+    ///
+    /// # Arguments
+    /// * `token` - The OAuth2 token to use for fetching user info.
+    ///
+    /// # Returns
+    /// Returns [`OAuth2UserInfo`] if successful, or an [`AuthError`] if fetching user info fails.
+    pub async fn fetch_oauth2_user_info(
+        &self,
+        token: &crate::core::oauth::store::OAuth2Token,
+    ) -> Result<crate::core::oauth::store::OAuth2UserInfo, AuthError> {
+        self.oauth2_manager.fetch_user_info(token).await
+    }
+
+    /// Refreshes an OAuth2 access token using a refresh token.
+    ///
+    /// # Arguments
+    /// * `token` - The OAuth2 token containing the refresh token.
+    ///
+    /// # Returns
+    /// Returns a new [`OAuth2Token`] if successful, or an [`AuthError`] if refreshing the token fails.
+    pub async fn refresh_oauth2_token(
+        &self,
+        token: &crate::core::oauth::store::OAuth2Token,
+    ) -> Result<crate::core::oauth::store::OAuth2Token, AuthError> {
+        self.oauth2_manager.refresh_token(token).await
+    }
+
+    /// Complete OAuth2 login flow that creates or links a user account and returns tokens.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider.
+    /// * `code` - The authorization code received from the provider.
+    /// * `state` - The state parameter for verification.
+    ///
+    /// # Returns
+    /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
+    pub async fn login_with_oauth2(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        code: &str,
+        state: &str,
+    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
+        // Exchange code for token
+        let oauth_token = self
+            .exchange_oauth2_code_for_token(provider, code, state)
+            .await?;
+
+        // Fetch user info from OAuth provider
+        let oauth_user_info = self.fetch_oauth2_user_info(&oauth_token).await?;
+
+        // Try to find existing user by OAuth provider and user ID
+        let existing_user = self
+            .persistent_users_manager
+            .get_user_by_oauth_id(provider, &oauth_user_info.provider_user_id)
+            .await;
+
+        let user = if let Some(mut user) = existing_user {
+            // Update OAuth account info
+            user.oauth_accounts.insert(provider, oauth_user_info);
+            user.updated_at = chrono::Utc::now().naive_utc();
+            self.persistent_users_manager.update_user(&user).await?;
+            user
+        } else {
+            // Check if user exists by email (if provided)
+            let existing_user_by_email = if let Some(ref email) = oauth_user_info.email {
+                self.persistent_users_manager
+                    .get_user_by_identifier(email)
+                    .await
+            } else {
+                None
+            };
+
+            if let Some(mut user) = existing_user_by_email {
+                // Link OAuth account to existing user
+                user.oauth_accounts.insert(provider, oauth_user_info);
+                user.updated_at = chrono::Utc::now().naive_utc();
+                self.persistent_users_manager.update_user(&user).await?;
+                user
+            } else {
+                // Create new user
+                let mut new_user = User::default();
+                new_user.id = uuid::Uuid::new_v4().to_string();
+                new_user.oauth_accounts.insert(provider, oauth_user_info);
+                new_user.created_at = chrono::Utc::now().naive_utc();
+                new_user.updated_at = new_user.created_at;
+
+                self.persistent_users_manager
+                    .add_user(new_user.clone())
+                    .await?;
+                new_user
+            }
+        };
+
+        // Generate tokens for the user
+        let tokens = self.get_tokens(user.id.clone()).await?;
+
+        Ok((user, tokens))
     }
 }

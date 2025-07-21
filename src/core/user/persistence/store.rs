@@ -122,7 +122,7 @@ impl UserRepository for PersistentUsers {
     /// # Returns
     ///
     /// `Ok(())` if the update was successful, or an `AuthError` otherwise.
-    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
+    async fn update_user(&self, user: &User) -> Result<(), crate::error::AuthError> {
         match self {
             PersistentUsers::InMemory(repo) => repo.update_user(user).await,
             #[cfg(feature = "postgres")]
@@ -145,6 +145,29 @@ impl UserRepository for PersistentUsers {
             PersistentUsers::InMemory(repo) => repo.delete_user(id).await,
             #[cfg(feature = "postgres")]
             PersistentUsers::PostgresDatabase(repo) => repo.delete_user(id).await,
+        }
+    }
+
+    /// Retrieves a user by their OAuth provider and provider user ID.
+    ///
+    /// Delegates to the underlying backend implementation.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider.
+    /// * `provider_user_id` - The user ID from the OAuth provider.
+    ///
+    /// # Returns
+    ///
+    /// `Some(User)` if found, or `None` if no user with the given OAuth credentials exists.
+    async fn get_user_by_oauth_id(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        provider_user_id: &str,
+    ) -> Option<User> {
+        match self {
+            PersistentUsers::InMemory(repo) => repo.get_user_by_oauth_id(provider, provider_user_id).await,
+            #[cfg(feature = "postgres")]
+            PersistentUsers::PostgresDatabase(repo) => repo.get_user_by_oauth_id(provider, provider_user_id).await,
         }
     }
 }
