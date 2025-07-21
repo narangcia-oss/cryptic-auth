@@ -102,26 +102,19 @@ async fn signup_handler(
     let req: Result<SignupRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(signup) => {
-            // Create user using the password manager and plain password
-            let user_result = crate::core::user::User::with_plain_password(
-                _auth.password_manager.as_ref(),
-                uuid::Uuid::new_v4().to_string(),
-                signup.username.clone(),
-                crate::core::credentials::PlainPassword::new(signup.password.clone()),
-            )
-            .await;
-            match user_result {
-                Ok(user) => match _auth.signup(user.clone()).await {
-                    Ok(_) => serde_json::json!({
-                        "id": user.id,
-                        "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
-                    })
-                    .to_string(),
-                    Err(e) => serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string(),
-                },
+            // Use the new unified signup method with credentials
+            match _auth
+                .signup(crate::auth_service::SignupMethod::Credentials {
+                    identifier: signup.username,
+                    password: signup.password,
+                })
+                .await
+            {
+                Ok((user, _tokens)) => serde_json::json!({
+                    "id": user.id,
+                    "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
+                })
+                .to_string(),
                 Err(e) => serde_json::json!({
                     "error": e.to_string()
                 })
@@ -163,7 +156,10 @@ async fn login_handler(
     match req {
         Ok(login) => {
             match _auth
-                .login_with_credentials_and_tokens(&login.username, &login.password)
+                .login(crate::auth_service::LoginMethod::Credentials {
+                    identifier: login.username,
+                    password: login.password,
+                })
                 .await
             {
                 Ok((user, tokens)) => serde_json::json!({

@@ -56,6 +56,8 @@ pub mod web_axum;
 
 /// Main authentication service.
 pub use auth_service::AuthService;
+/// Authentication method enums for unified login and signup.
+pub use auth_service::{LoginMethod, SignupMethod};
 /// User type.
 pub use core::user::User as CrypticUser;
 /// Error type for authentication operations.

@@ -16,6 +16,48 @@ use std::sync::Arc;
 
 use crate::{core::user::User, error::AuthError};
 
+/// Represents different authentication methods for login operations.
+#[derive(Debug, Clone)]
+pub enum LoginMethod {
+    /// Login using username/email and password credentials.
+    Credentials {
+        /// The user identifier (username, email, etc.)
+        identifier: String,
+        /// The user's plain text password
+        password: String,
+    },
+    /// Login using OAuth2 authorization code flow.
+    OAuth2 {
+        /// The OAuth2 provider
+        provider: crate::core::oauth::store::OAuth2Provider,
+        /// The authorization code received from the provider
+        code: String,
+        /// The state parameter for CSRF protection
+        state: String,
+    },
+}
+
+/// Represents different signup/registration methods.
+#[derive(Debug, Clone)]
+pub enum SignupMethod {
+    /// Register using credentials (username/email and password).
+    Credentials {
+        /// The user identifier (username, email, etc.)
+        identifier: String,
+        /// The user's plain text password
+        password: String,
+    },
+    /// Register via OAuth2 (will create account if it doesn't exist).
+    OAuth2 {
+        /// The OAuth2 provider
+        provider: crate::core::oauth::store::OAuth2Provider,
+        /// The authorization code received from the provider
+        code: String,
+        /// The state parameter for CSRF protection
+        state: String,
+    },
+}
+
 /// The main structure of the authentication service.
 /// It aggregates the necessary dependencies to perform operations.
 /// The main structure of the authentication service.
@@ -110,14 +152,230 @@ impl AuthService {
         })
     }
 
+    /// Unified login method that supports different authentication methods.
+    ///
+    /// # Arguments
+    /// * `method` - The authentication method to use for login.
+    ///
+    /// # Returns
+    /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
+    pub async fn login(
+        &self,
+        method: LoginMethod,
+    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
+        match method {
+            LoginMethod::Credentials {
+                identifier,
+                password,
+            } => {
+                // Find user by identifier
+                let stored_user = self
+                    .persistent_users_manager
+                    .get_user_by_identifier(&identifier)
+                    .await
+                    .ok_or(AuthError::InvalidCredentials)?;
+
+                // Verify the password using the password manager from the service
+                let credentials = stored_user
+                    .credentials
+                    .as_ref()
+                    .ok_or(AuthError::InvalidCredentials)?;
+
+                let is_valid = self
+                    .password_manager
+                    .verify_password(&password, &credentials.password_hash)
+                    .await
+                    .map_err(|e| {
+                        AuthError::PasswordVerificationError(format!(
+                            "Password verification failed: {e}"
+                        ))
+                    })?;
+
+                if !is_valid {
+                    return Err(AuthError::InvalidCredentials);
+                }
+
+                // Generate tokens
+                let tokens = self.get_tokens(stored_user.id.clone()).await?;
+                Ok((stored_user, tokens))
+            }
+            LoginMethod::OAuth2 {
+                provider,
+                code,
+                state,
+            } => {
+                // Exchange code for token
+                let oauth_token = self
+                    .exchange_oauth2_code_for_token(provider, &code, &state)
+                    .await?;
+
+                // Fetch user info from OAuth provider
+                let oauth_user_info = self.fetch_oauth2_user_info(&oauth_token).await?;
+
+                // Try to find existing user by OAuth provider and user ID
+                let existing_user = self
+                    .persistent_users_manager
+                    .get_user_by_oauth_id(provider, &oauth_user_info.provider_user_id)
+                    .await;
+
+                let user = if let Some(mut user) = existing_user {
+                    // Update OAuth account info
+                    user.oauth_accounts.insert(provider, oauth_user_info);
+                    user.updated_at = chrono::Utc::now().naive_utc();
+                    self.persistent_users_manager.update_user(&user).await?;
+                    user
+                } else {
+                    // Check if user exists by email (if provided)
+                    let existing_user_by_email = if let Some(ref email) = oauth_user_info.email {
+                        self.persistent_users_manager
+                            .get_user_by_identifier(email)
+                            .await
+                    } else {
+                        None
+                    };
+
+                    if let Some(mut user) = existing_user_by_email {
+                        // Link OAuth account to existing user
+                        user.oauth_accounts.insert(provider, oauth_user_info);
+                        user.updated_at = chrono::Utc::now().naive_utc();
+                        self.persistent_users_manager.update_user(&user).await?;
+                        user
+                    } else {
+                        // Create new user
+                        let mut new_user = User {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            ..User::default()
+                        };
+                        new_user.oauth_accounts.insert(provider, oauth_user_info);
+                        new_user.created_at = chrono::Utc::now().naive_utc();
+                        new_user.updated_at = new_user.created_at;
+
+                        self.persistent_users_manager
+                            .add_user(new_user.clone())
+                            .await?;
+                        new_user
+                    }
+                };
+
+                // Generate tokens for the user
+                let tokens = self.get_tokens(user.id.clone()).await?;
+                Ok((user, tokens))
+            }
+        }
+    }
+
+    /// Unified signup method that supports different registration methods.
+    ///
+    /// # Arguments
+    /// * `method` - The registration method to use for signup.
+    ///
+    /// # Returns
+    /// Returns a tuple of the [`User`] and a [`TokenPair`] if signup is successful, or an [`AuthError`] if registration fails.
+    pub async fn signup(
+        &self,
+        method: SignupMethod,
+    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
+        match method {
+            SignupMethod::Credentials {
+                identifier,
+                password,
+            } => {
+                // Create user with credentials
+                let user = User::with_plain_password(
+                    self.password_manager.as_ref(),
+                    uuid::Uuid::new_v4().to_string(),
+                    identifier,
+                    crate::core::credentials::PlainPassword::new(password),
+                )
+                .await?;
+
+                // Register the user
+                self.persistent_users_manager
+                    .add_user(user.clone())
+                    .await
+                    .map_err(|e| AuthError::NotImplemented(format!("signup: {e}")))?;
+
+                // Generate tokens
+                let tokens = self.get_tokens(user.id.clone()).await?;
+                Ok((user, tokens))
+            }
+            SignupMethod::OAuth2 {
+                provider,
+                code,
+                state,
+            } => {
+                // Exchange code for token
+                let oauth_token = self
+                    .exchange_oauth2_code_for_token(provider, &code, &state)
+                    .await?;
+
+                // Fetch user info from OAuth provider
+                let oauth_user_info = self.fetch_oauth2_user_info(&oauth_token).await?;
+
+                // Try to find existing user by OAuth provider and user ID
+                let existing_user = self
+                    .persistent_users_manager
+                    .get_user_by_oauth_id(provider, &oauth_user_info.provider_user_id)
+                    .await;
+
+                let user = if let Some(mut user) = existing_user {
+                    // Update OAuth account info
+                    user.oauth_accounts.insert(provider, oauth_user_info);
+                    user.updated_at = chrono::Utc::now().naive_utc();
+                    self.persistent_users_manager.update_user(&user).await?;
+                    user
+                } else {
+                    // Check if user exists by email (if provided)
+                    let existing_user_by_email = if let Some(ref email) = oauth_user_info.email {
+                        self.persistent_users_manager
+                            .get_user_by_identifier(email)
+                            .await
+                    } else {
+                        None
+                    };
+
+                    if let Some(mut user) = existing_user_by_email {
+                        // Link OAuth account to existing user
+                        user.oauth_accounts.insert(provider, oauth_user_info);
+                        user.updated_at = chrono::Utc::now().naive_utc();
+                        self.persistent_users_manager.update_user(&user).await?;
+                        user
+                    } else {
+                        // Create new user
+                        let mut new_user = User {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            ..User::default()
+                        };
+                        new_user.oauth_accounts.insert(provider, oauth_user_info);
+                        new_user.created_at = chrono::Utc::now().naive_utc();
+                        new_user.updated_at = new_user.created_at;
+
+                        self.persistent_users_manager
+                            .add_user(new_user.clone())
+                            .await?;
+                        new_user
+                    }
+                };
+
+                // Generate tokens for the user
+                let tokens = self.get_tokens(user.id.clone()).await?;
+                Ok((user, tokens))
+            }
+        }
+    }
+
     /// Registers a new user in the system.
+    ///
+    /// # Deprecated
+    /// This method is deprecated. Use [`signup`] with [`SignupMethod::Credentials`] instead.
     ///
     /// # Arguments
     /// * `user` - The [`User`] object to register.
     ///
     /// # Returns
     /// Returns `Ok(())` if registration is successful, or an [`AuthError`] if registration fails.
-    pub async fn signup(&self, user: User) -> Result<(), AuthError> {
+    #[deprecated(since = "0.3.0", note = "Use signup with SignupMethod instead")]
+    pub async fn signup_user(&self, user: User) -> Result<(), AuthError> {
         self.persistent_users_manager
             .add_user(user)
             .await
@@ -127,12 +385,16 @@ impl AuthService {
 
     /// Attempts to log in a user by verifying their credentials.
     ///
+    /// # Deprecated
+    /// This method is deprecated. Use [`login`] with [`LoginMethod::Credentials`] instead.
+    ///
     /// # Arguments
     /// * `identifier` - The user identifier (e.g., username or email).
     /// * `plain_password` - The user's plain text password.
     ///
     /// # Returns
     /// Returns the [`User`] if login is successful, or an [`AuthError`] if authentication fails.
+    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
     pub async fn login_with_credentials(
         &self,
         identifier: &str,
@@ -230,22 +492,26 @@ impl AuthService {
 
     /// Complete login flow that returns both the user and a new token pair.
     ///
+    /// # Deprecated
+    /// This method is deprecated. Use [`login`] with [`LoginMethod::Credentials`] instead.
+    ///
     /// # Arguments
     /// * `identifier` - The user identifier (e.g., username or email).
     /// * `plain_password` - The user's plain text password.
     ///
     /// # Returns
     /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
+    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
     pub async fn login_with_credentials_and_tokens(
         &self,
         identifier: &str,
         plain_password: &str,
     ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
-        let user = self
-            .login_with_credentials(identifier, plain_password)
-            .await?;
-        let tokens = self.get_tokens(user.id.clone()).await?;
-        Ok((user, tokens))
+        self.login(LoginMethod::Credentials {
+            identifier: identifier.to_string(),
+            password: plain_password.to_string(),
+        })
+        .await
     }
 
     /// Validates a token and retrieves the associated user from the repository.
@@ -335,6 +601,9 @@ impl AuthService {
 
     /// Complete OAuth2 login flow that creates or links a user account and returns tokens.
     ///
+    /// # Deprecated
+    /// This method is deprecated. Use [`login`] with [`LoginMethod::OAuth2`] instead.
+    ///
     /// # Arguments
     /// * `provider` - The OAuth2 provider.
     /// * `code` - The authorization code received from the provider.
@@ -342,6 +611,7 @@ impl AuthService {
     ///
     /// # Returns
     /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
+    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
     pub async fn login_with_oauth2(
         &self,
         provider: crate::core::oauth::store::OAuth2Provider,
