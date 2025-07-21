@@ -1,7 +1,38 @@
 //! OAuth2 Manager Implementation
 //!
-//! This module provides the concrete implementation of the OAuth2Service trait
-//! using the `oauth2` and `reqwest` crates for handling OAuth2 authentication flows.
+//! This module provides the concrete implementation of the [`OAuth2Service`] trait
+//! using the [`oauth2`] and [`reqwest`] crates for handling OAuth2 authentication flows.
+//!
+//! # Overview
+//!
+//! The [`OAuth2Manager`] struct manages OAuth2 authentication flows for multiple providers,
+//! including Google, GitHub, Discord, and Microsoft. It handles generating authorization URLs,
+//! exchanging authorization codes for tokens, refreshing tokens, and fetching user information.
+//!
+//! ## Supported Providers
+//!
+//! - Google
+//! - GitHub
+//! - Discord
+//! - Microsoft
+//!
+//! ## Main Features
+//!
+//! - Provider configuration management
+//! - HTTP requests for OAuth2 endpoints
+//! - Parsing provider-specific user info responses
+//! - Token exchange and refresh
+//!
+//! ## Example Usage
+//!
+//! ```rust
+//! use crate::core::oauth::{OAuth2Manager, OAuth2Provider, OAuth2Config};
+//! use std::collections::HashMap;
+//!
+//! let mut configs = HashMap::new();
+//! configs.insert(OAuth2Provider::Google, OAuth2Config::default_google());
+//! let manager = OAuth2Manager::new(configs);
+//! ```
 
 use async_trait::async_trait;
 use oauth2::{
@@ -18,6 +49,9 @@ use super::OAuth2Service;
 use super::store::{OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2UserInfo};
 use crate::AuthError;
 
+/// Type alias for a fully configured OAuth2 BasicClient
+///
+/// This type is used internally for managing provider-specific OAuth2 clients.
 type ConfiguredBasicClient = oauth2::Client<
     oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
     oauth2::StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
@@ -31,22 +65,28 @@ type ConfiguredBasicClient = oauth2::Client<
     EndpointSet,
 >;
 
-/// OAuth2 Manager that implements the OAuth2Service trait
+/// Manages OAuth2 authentication flows for multiple providers.
+///
+/// The [`OAuth2Manager`] struct implements the [`OAuth2Service`] trait and provides methods
+/// for generating authorization URLs, exchanging codes for tokens, refreshing tokens, and
+/// fetching user information from supported OAuth2 providers.
 pub struct OAuth2Manager {
+    /// Map of OAuth2 providers to their configuration.
     configs: HashMap<OAuth2Provider, OAuth2Config>,
+    /// HTTP client used for making requests to provider endpoints.
     http_client: Client,
 }
 
 impl OAuth2Manager {
-    /// Creates a new OAuth2Manager with the provided configurations
+    /// Creates a new [`OAuth2Manager`] with the provided provider configurations.
     ///
     /// # Arguments
     ///
-    /// * `configs` - A map of OAuth2Provider to OAuth2Config
+    /// * `configs` - A map of [`OAuth2Provider`] to [`OAuth2Config`]
     ///
     /// # Returns
     ///
-    /// A new OAuth2Manager instance
+    /// A new [`OAuth2Manager`] instance.
     pub fn new(configs: HashMap<OAuth2Provider, OAuth2Config>) -> Self {
         Self {
             configs,
@@ -54,7 +94,15 @@ impl OAuth2Manager {
         }
     }
 
-    /// Gets the OAuth2 client for a given provider
+    /// Returns a configured OAuth2 client for the given provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider to get the client for.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing or invalid.
     fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
             AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
@@ -78,7 +126,16 @@ impl OAuth2Manager {
         Ok(client)
     }
 
-    /// Parses user information from the provider response
+    /// Parses user information from the provider's user info response.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider.
+    /// * `response_body` - The JSON response body from the provider's user info endpoint.
+    ///
+    /// # Returns
+    ///
+    /// Returns [`OAuth2UserInfo`] on success, or [`AuthError`] on failure.
     async fn parse_user_info(
         &self,
         provider: OAuth2Provider,
@@ -200,6 +257,17 @@ impl OAuth2Manager {
 
 #[async_trait]
 impl OAuth2Service for OAuth2Manager {
+    /// Generates the OAuth2 authorization URL for the specified provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider.
+    /// * `state` - CSRF state parameter.
+    /// * `scopes` - Optional additional scopes to request.
+    ///
+    /// # Returns
+    ///
+    /// Returns the authorization URL as a string, or [`AuthError`] on failure.
     async fn generate_auth_url(
         &self,
         provider: OAuth2Provider,
@@ -230,6 +298,17 @@ impl OAuth2Service for OAuth2Manager {
         Ok(auth_url.to_string())
     }
 
+    /// Exchanges an authorization code for an access token for the specified provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider.
+    /// * `code` - The authorization code received from the provider.
+    /// * `_state` - The CSRF state parameter (unused).
+    ///
+    /// # Returns
+    ///
+    /// Returns an [`OAuth2Token`] on success, or [`AuthError`] on failure.
     async fn exchange_code_for_token(
         &self,
         provider: OAuth2Provider,
@@ -269,6 +348,15 @@ impl OAuth2Service for OAuth2Manager {
         })
     }
 
+    /// Fetches user information from the provider's user info endpoint using the access token.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The [`OAuth2Token`] containing the access token and provider.
+    ///
+    /// # Returns
+    ///
+    /// Returns [`OAuth2UserInfo`] on success, or [`AuthError`] on failure.
     async fn fetch_user_info(&self, token: &OAuth2Token) -> Result<OAuth2UserInfo, AuthError> {
         let config = self.configs.get(&token.provider).ok_or_else(|| {
             AuthError::ConfigError(format!(
@@ -302,6 +390,15 @@ impl OAuth2Service for OAuth2Manager {
         self.parse_user_info(token.provider, response_body).await
     }
 
+    /// Refreshes the access token using the refresh token for the specified provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The [`OAuth2Token`] containing the refresh token and provider.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new [`OAuth2Token`] on success, or [`AuthError`] on failure.
     async fn refresh_token(&self, token: &OAuth2Token) -> Result<OAuth2Token, AuthError> {
         let client = self.get_client(token.provider)?;
 
@@ -347,6 +444,7 @@ impl OAuth2Service for OAuth2Manager {
     }
 }
 
+/// Provides a default empty [`OAuth2Manager`] with no provider configurations.
 impl Default for OAuth2Manager {
     fn default() -> Self {
         Self::new(HashMap::new())
