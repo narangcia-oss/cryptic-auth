@@ -58,8 +58,8 @@ pub async fn start_server(auth_service: Arc<AuthService>, address: Option<std::n
         .route("/health", get(health_handler).post(health_handler))
         .route("/token/refresh", post(refresh_token_handler))
         .route("/token/validate", post(validate_token_handler))
-        .route("/oauth/:provider/auth", get(oauth_auth_handler))
-        .route("/oauth/:provider/callback", get(oauth_callback_handler))
+        .route("/oauth/{provider}/auth", get(oauth_auth_handler))
+        .route("/oauth/{provider}/callback", get(oauth_callback_handler))
         .route("/oauth/signup", post(oauth_signup_handler))
         .route("/oauth/login", post(oauth_login_handler))
         .with_state(auth_service);
