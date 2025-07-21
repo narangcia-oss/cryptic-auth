@@ -30,6 +30,8 @@
 //! ```
 
 use crate::core::credentials::{Credentials, PlainPassword};
+use crate::core::oauth::store::{OAuth2Provider, OAuth2UserInfo};
+use std::collections::HashMap;
 
 /// Represents a user in the authentication system.
 ///
@@ -40,7 +42,13 @@ pub struct User {
     /// Unique identifier for the user (preferably a UUID).
     pub id: String,
     /// User credentials, including hashed password and identifier.
-    pub credentials: Credentials,
+    pub credentials: Option<Credentials>,
+    /// OAuth2 accounts linked to this user
+    pub oauth_accounts: HashMap<OAuth2Provider, OAuth2UserInfo>,
+    /// Account creation timestamp
+    pub created_at: chrono::NaiveDateTime,
+    /// Last updated timestamp
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 impl User {
@@ -53,7 +61,10 @@ impl User {
     /// # Returns
     /// A new [`User`] instance.
     pub fn new(id: String, credentials: Credentials) -> Self {
-        Self { id, credentials }
+        Self {
+            id,
+            credentials: Some(credentials),
+        }
     }
 
     /// Creates a user from a plaintext password, hashing it using the provided password manager.
@@ -94,7 +105,10 @@ impl User {
             Credentials::from_plain_password(manager, id.clone(), identifier, plain_password)
                 .await?;
 
-        Ok(Self { id, credentials })
+        Ok(Self {
+            id,
+            credentials: Some(credentials),
+        })
     }
 }
 
