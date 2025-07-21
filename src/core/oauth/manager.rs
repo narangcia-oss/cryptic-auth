@@ -102,7 +102,7 @@ impl OAuth2Manager {
     /// # Errors
     ///
     /// Returns [`AuthError::ConfigError`] if the provider configuration is missing or invalid.
-    fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
+    pub fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
             AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
         })?;
@@ -135,7 +135,7 @@ impl OAuth2Manager {
     /// # Returns
     ///
     /// Returns [`OAuth2UserInfo`] on success, or [`AuthError`] on failure.
-    async fn parse_user_info(
+    pub async fn parse_user_info(
         &self,
         provider: OAuth2Provider,
         response_body: Value,
