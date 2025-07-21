@@ -11,6 +11,7 @@ The refactoring introduces a unified authentication system that consolidates dif
 ### 1. New Enums
 
 #### `LoginMethod`
+
 ```rust
 pub enum LoginMethod {
     /// Login using username/email and password credentials.
@@ -28,6 +29,7 @@ pub enum LoginMethod {
 ```
 
 #### `SignupMethod`
+
 ```rust
 pub enum SignupMethod {
     /// Register using credentials (username/email and password).
@@ -47,12 +49,14 @@ pub enum SignupMethod {
 ### 2. Unified Methods
 
 #### `AuthService::login()`
+
 - **Single entry point** for all login operations
 - Takes a `LoginMethod` enum parameter
 - Returns `Result<(User, TokenPair), AuthError>` for all methods
 - Supports both credentials and OAuth2 authentication
 
 #### `AuthService::signup()`
+
 - **Single entry point** for all signup operations
 - Takes a `SignupMethod` enum parameter
 - Returns `Result<(User, TokenPair), AuthError>` for all methods
@@ -70,21 +74,25 @@ The following methods are now deprecated but remain available for backward compa
 ## Benefits
 
 ### 1. **Simplified API**
+
 - Only 2 methods instead of 4+ different login/signup variants
 - Consistent return types across all authentication methods
 - Type-safe method selection through enums
 
 ### 2. **Better Developer Experience**
+
 - Clear separation of authentication methods
 - Autocomplete-friendly enum variants
 - Self-documenting code through descriptive enum names
 
 ### 3. **Extensibility**
+
 - Easy to add new authentication methods by extending the enums
 - Centralized logic for each authentication type
 - Consistent error handling across all methods
 
 ### 4. **Maintainability**
+
 - Single place to modify authentication logic
 - Reduced code duplication
 - Clear separation of concerns
@@ -139,6 +147,7 @@ let (user, tokens) = auth_service
 Replace old method calls with new enum-based calls:
 
 **Before:**
+
 ```rust
 // Old signup
 let user = User::with_plain_password(...).await?;
@@ -151,6 +160,7 @@ let (user, tokens) = auth_service
 ```
 
 **After:**
+
 ```rust
 // New unified signup
 let (user, tokens) = auth_service
