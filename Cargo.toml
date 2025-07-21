@@ -32,8 +32,8 @@ log = "0.4.27"
 zeroize = { version = "1.8.1", features = ["derive"] }
 serde_json = "1.0.141"
 # OAuth2 support
-oauth2 = { version = "5.0.0", optional = true }
-reqwest = { version = "0.12.22", features = ["json"], optional = true }
+oauth2 = { version = "5.0.0" }
+reqwest = { version = "0.12.22", features = ["json"] }
 
 # --- Optional dependencies for features ---
 sqlx = { version = "0.8.6", features = [
@@ -52,9 +52,8 @@ tokio = { version = "1.46.1", features = ["full"], optional = true }
 bare = []
 postgres = ["dep:sqlx", "dep:sqlx-postgres", "tokio"]
 web = ["axum", "tokio"]
-oauth2 = ["dep:oauth2", "dep:reqwest", "tokio"]
 db = ["postgres"]
-full = ["db", "web", "oauth2"]
+full = ["db", "web"]
 
 [dev-dependencies]
 # Pour les tests asynchrones et les exemples
