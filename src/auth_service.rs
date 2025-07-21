@@ -33,6 +33,7 @@ pub struct AuthService {
         Box<dyn crate::core::user::persistence::UserRepository + Send + Sync>,
     /// The token manager responsible for generating and validating authentication tokens.
     pub token_manager: Box<dyn crate::core::token::TokenService + Send + Sync>,
+    pub oauth2_manager: Box<dyn crate::core::oauth::OAuth2Service + Send + Sync>,
 }
 
 impl Default for AuthService {

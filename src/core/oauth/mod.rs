@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait OauthManager {
+pub trait OAuth2Service {
     /// Fetches the OAuth2 token for a given provider.
     ///
     /// # Arguments
