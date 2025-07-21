@@ -18,5 +18,4 @@ pub struct AuthServiceVariables {
     /// The duration (in seconds) for which a refresh token is valid.
     pub refresh_token_expiration: u64,
 
-    pub oauth_config: Option<crate::core::oauth::OAuth2Config>,
 }
