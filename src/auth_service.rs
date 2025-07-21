@@ -398,8 +398,10 @@ impl AuthService {
                 user
             } else {
                 // Create new user
-                let mut new_user = User::default();
-                new_user.id = uuid::Uuid::new_v4().to_string();
+                let mut new_user = User {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    ..User::default()
+                };
                 new_user.oauth_accounts.insert(provider, oauth_user_info);
                 new_user.created_at = chrono::Utc::now().naive_utc();
                 new_user.updated_at = new_user.created_at;

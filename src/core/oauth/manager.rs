@@ -6,8 +6,8 @@
 use async_trait::async_trait;
 use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
-    EndpointSet, RedirectUrl, RefreshToken, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
-    basic::BasicClient, basic::BasicTokenType,
+    EndpointSet, RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl, basic::BasicClient,
+    basic::BasicTokenType,
 };
 use reqwest::Client;
 use serde_json::Value;
@@ -18,7 +18,6 @@ use super::OAuth2Service;
 use super::store::{OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2UserInfo};
 use crate::AuthError;
 
-type OAuth2TokenResponse = StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>;
 type ConfiguredBasicClient = oauth2::Client<
     oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
     oauth2::StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
@@ -58,17 +57,17 @@ impl OAuth2Manager {
     /// Gets the OAuth2 client for a given provider
     fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
-            AuthError::ConfigError(format!("No config found for provider: {:?}", provider))
+            AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
         })?;
 
         let auth_url = AuthUrl::new(config.auth_url(provider).to_string())
-            .map_err(|e| AuthError::ConfigError(format!("Invalid auth URL: {}", e)))?;
+            .map_err(|e| AuthError::ConfigError(format!("Invalid auth URL: {e}")))?;
 
         let token_url = TokenUrl::new(config.token_url(provider).to_string())
-            .map_err(|e| AuthError::ConfigError(format!("Invalid token URL: {}", e)))?;
+            .map_err(|e| AuthError::ConfigError(format!("Invalid token URL: {e}")))?;
 
         let redirect_url = RedirectUrl::new(config.redirect_uri.clone())
-            .map_err(|e| AuthError::ConfigError(format!("Invalid redirect URL: {}", e)))?;
+            .map_err(|e| AuthError::ConfigError(format!("Invalid redirect URL: {e}")))?;
 
         let client = BasicClient::new(ClientId::new(config.client_id.clone()))
             .set_client_secret(ClientSecret::new(config.client_secret.clone()))
@@ -151,14 +150,11 @@ impl OAuth2Manager {
                     .ok_or_else(|| AuthError::OAuthInvalidResponse("Missing user ID".to_string()))?
                     .to_string();
 
-                let avatar_url = if let Some(avatar_hash) = avatar {
-                    Some(format!(
-                        "https://cdn.discordapp.com/avatars/{}/{}.png",
-                        provider_user_id, avatar_hash
-                    ))
-                } else {
-                    None
-                };
+                let avatar_url = avatar.map(|avatar_hash| {
+                    format!(
+                        "https://cdn.discordapp.com/avatars/{provider_user_id}/{avatar_hash}.png"
+                    )
+                });
 
                 let verified_email = response_body["verified"].as_bool();
                 let locale = response_body["locale"].as_str().map(|s| s.to_string());
@@ -246,7 +242,7 @@ impl OAuth2Service for OAuth2Manager {
             .exchange_code(AuthorizationCode::new(code.to_string()))
             .request_async(&reqwest::Client::new())
             .await
-            .map_err(|e| AuthError::OAuthTokenExchange(format!("Token exchange failed: {}", e)))?;
+            .map_err(|e| AuthError::OAuthTokenExchange(format!("Token exchange failed: {e}")))?;
 
         let access_token = token_result.access_token().secret().clone();
         let refresh_token = token_result.refresh_token().map(|rt| rt.secret().clone());
@@ -289,7 +285,7 @@ impl OAuth2Service for OAuth2Manager {
             .bearer_auth(&token.access_token)
             .send()
             .await
-            .map_err(|e| AuthError::OAuthNetwork(format!("Failed to fetch user info: {}", e)))?;
+            .map_err(|e| AuthError::OAuthNetwork(format!("Failed to fetch user info: {e}")))?;
 
         if !response.status().is_success() {
             return Err(AuthError::OAuthUserInfo(format!(
@@ -298,9 +294,10 @@ impl OAuth2Service for OAuth2Manager {
             )));
         }
 
-        let response_body: Value = response.json().await.map_err(|e| {
-            AuthError::OAuthInvalidResponse(format!("Invalid JSON response: {}", e))
-        })?;
+        let response_body: Value = response
+            .json()
+            .await
+            .map_err(|e| AuthError::OAuthInvalidResponse(format!("Invalid JSON response: {e}")))?;
 
         self.parse_user_info(token.provider, response_body).await
     }
@@ -316,7 +313,7 @@ impl OAuth2Service for OAuth2Manager {
             .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
             .request_async(&reqwest::Client::new())
             .await
-            .map_err(|e| AuthError::OAuthTokenExchange(format!("Token refresh failed: {}", e)))?;
+            .map_err(|e| AuthError::OAuthTokenExchange(format!("Token refresh failed: {e}")))?;
 
         let access_token = token_result.access_token().secret().clone();
         let new_refresh_token = token_result

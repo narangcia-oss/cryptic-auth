@@ -344,7 +344,7 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     /// # Returns
     ///
     /// Returns [`Ok(())`] on success, or [`AuthError::DatabaseError`] on failure.
-    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
+    async fn update_user(&self, user: &User) -> Result<(), crate::error::AuthError> {
         let credentials = user
             .credentials
             .as_ref()
@@ -384,5 +384,34 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
             .await
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
         Ok(())
+    }
+
+    /// Retrieves a user by their OAuth provider and provider user ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider.
+    /// * `provider_user_id` - The user ID from the OAuth provider.
+    ///
+    /// # Returns
+    ///
+    /// Returns [`Some(User)`] if found, or [`None`] if not found.
+    async fn get_user_by_oauth_id(
+        &self,
+        _provider: crate::core::oauth::store::OAuth2Provider,
+        _provider_user_id: &str,
+    ) -> Option<User> {
+        // For now, we'll use the User's oauth_accounts field to find the user
+        // In a full implementation, you might want to create an oauth_accounts table
+        // and join with it. For this implementation, we'll return None as the
+        // in-memory implementation would handle OAuth accounts in the User struct.
+
+        // This is a placeholder implementation - in a real scenario you would:
+        // 1. Create an oauth_accounts table linking users to their OAuth accounts
+        // 2. Query that table to find the user_id for the given provider + provider_user_id
+        // 3. Return the corresponding User
+
+        // For now, return None to match the expected signature
+        None
     }
 }
