@@ -43,7 +43,6 @@ use oauth2::{
 use reqwest::Client;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::time::SystemTime;
 
 use super::OAuth2Service;
 use super::store::{OAuth2Config, OAuth2Provider, OAuth2Token, OAuth2UserInfo};
@@ -141,7 +140,7 @@ impl OAuth2Manager {
         provider: OAuth2Provider,
         response_body: Value,
     ) -> Result<OAuth2UserInfo, AuthError> {
-        let now = SystemTime::now();
+        let now = chrono::Utc::now().naive_utc();
 
         match provider {
             OAuth2Provider::Google => {
@@ -325,9 +324,10 @@ impl OAuth2Service for OAuth2Manager {
 
         let access_token = token_result.access_token().secret().clone();
         let refresh_token = token_result.refresh_token().map(|rt| rt.secret().clone());
-        let expires_at = token_result
-            .expires_in()
-            .map(|duration| SystemTime::now() + duration);
+        let expires_at = token_result.expires_in().map(|duration| {
+            chrono::Utc::now().naive_utc()
+                + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
+        });
         let token_type = token_result.token_type().as_ref().to_string();
         let scope = token_result.scopes().map(|scopes| {
             scopes
@@ -344,7 +344,7 @@ impl OAuth2Service for OAuth2Manager {
             token_type,
             scope,
             provider,
-            created_at: SystemTime::now(),
+            created_at: chrono::Utc::now().naive_utc(),
         })
     }
 
@@ -417,9 +417,10 @@ impl OAuth2Service for OAuth2Manager {
             .refresh_token()
             .map(|rt| rt.secret().clone())
             .or_else(|| token.refresh_token.clone());
-        let expires_at = token_result
-            .expires_in()
-            .map(|duration| SystemTime::now() + duration);
+        let expires_at = token_result.expires_in().map(|duration| {
+            chrono::Utc::now().naive_utc()
+                + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
+        });
         let token_type = token_result.token_type().as_ref().to_string();
         let scope = token_result
             .scopes()
@@ -439,7 +440,7 @@ impl OAuth2Service for OAuth2Manager {
             token_type,
             scope,
             provider: token.provider,
-            created_at: SystemTime::now(),
+            created_at: chrono::Utc::now().naive_utc(),
         })
     }
 }

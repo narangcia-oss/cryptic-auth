@@ -3,8 +3,8 @@
 //! This module defines enums and structs for representing OAuth2 providers, tokens, user information,
 //! configuration, and session state. It also provides utility methods for working with these types.
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
 
 /// Supported OAuth2 providers for authentication.
 ///
@@ -52,7 +52,7 @@ pub struct OAuth2Token {
     /// The optional refresh token string.
     pub refresh_token: Option<String>,
     /// The expiration time of the access token, if available.
-    pub expires_at: Option<SystemTime>,
+    pub expires_at: Option<NaiveDateTime>,
     /// The type of token (usually "Bearer").
     pub token_type: String,
     /// The scope of the token, if provided.
@@ -60,14 +60,14 @@ pub struct OAuth2Token {
     /// The OAuth2 provider that issued the token.
     pub provider: OAuth2Provider,
     /// The time the token was created.
-    pub created_at: SystemTime,
+    pub created_at: NaiveDateTime,
 }
 
 impl OAuth2Token {
     /// Returns true if the token is expired, false otherwise.
     pub fn is_expired(&self) -> bool {
         self.expires_at
-            .map(|exp| SystemTime::now() > exp)
+            .map(|exp| chrono::Utc::now().naive_utc() > exp)
             .unwrap_or(false)
     }
 
@@ -79,10 +79,9 @@ impl OAuth2Token {
     pub fn expires_soon(&self, threshold_secs: u64) -> bool {
         self.expires_at
             .map(|exp| {
-                SystemTime::now()
-                    .duration_since(exp)
-                    .map(|d| d.as_secs() < threshold_secs)
-                    .unwrap_or(true)
+                let now = chrono::Utc::now().naive_utc();
+                let duration = exp.signed_duration_since(now).num_seconds();
+                duration < threshold_secs as i64
             })
             .unwrap_or(false)
     }
@@ -106,7 +105,7 @@ pub struct OAuth2UserInfo {
     /// The user's locale, if available.
     pub locale: Option<String>,
     /// The time the user info was last updated.
-    pub updated_at: SystemTime,
+    pub updated_at: NaiveDateTime,
     /// The raw user info data as returned by the provider, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw_data: Option<serde_json::Value>,
@@ -183,7 +182,7 @@ pub struct OAuth2Session {
     /// The PKCE verifier string, if used.
     pub pkce_verifier: Option<String>,
     /// The time the session was created.
-    pub created_at: SystemTime,
+    pub created_at: NaiveDateTime,
     /// The time the session expires.
-    pub expires_at: SystemTime,
+    pub expires_at: NaiveDateTime,
 }
