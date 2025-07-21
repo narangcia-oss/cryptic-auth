@@ -114,7 +114,7 @@ async fn signup_handler(
                 Ok(user) => match _auth.signup(user.clone()).await {
                     Ok(_) => serde_json::json!({
                         "id": user.id,
-                        "identifier": user.credentials.identifier
+                        "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
                     })
                     .to_string(),
                     Err(e) => serde_json::json!({
@@ -168,7 +168,7 @@ async fn login_handler(
             {
                 Ok((user, tokens)) => serde_json::json!({
                     "id": user.id,
-                    "identifier": user.credentials.identifier,
+                    "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string()),
                     "access_token": tokens.access_token,
                     "refresh_token": tokens.refresh_token
                 })

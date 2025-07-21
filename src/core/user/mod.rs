@@ -61,9 +61,13 @@ impl User {
     /// # Returns
     /// A new [`User`] instance.
     pub fn new(id: String, credentials: Credentials) -> Self {
+        let now = chrono::Utc::now().naive_utc();
         Self {
             id,
             credentials: Some(credentials),
+            oauth_accounts: HashMap::new(),
+            created_at: now,
+            updated_at: now,
         }
     }
 
@@ -108,6 +112,9 @@ impl User {
         Ok(Self {
             id,
             credentials: Some(credentials),
+            oauth_accounts: HashMap::new(),
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
         })
     }
 }

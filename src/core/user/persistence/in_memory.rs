@@ -76,7 +76,12 @@ impl UserRepository for InMemoryUserRepo {
         let users = self.users.lock().ok()?; // Handle potential poisoning
         users
             .iter()
-            .find(|u| u.credentials.identifier == identifier)
+            .find(|u| {
+                u.credentials
+                    .as_ref()
+                    .map(|creds| creds.identifier == identifier)
+                    .unwrap_or(false)
+            })
             .cloned()
     }
 

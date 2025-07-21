@@ -137,9 +137,14 @@ impl AuthService {
             .ok_or(AuthError::InvalidCredentials)?;
 
         // Verify the password using the password manager from the service
+        let credentials = stored_user
+            .credentials
+            .as_ref()
+            .ok_or(AuthError::InvalidCredentials)?;
+            
         let is_valid = self
             .password_manager
-            .verify_password(plain_password, &stored_user.credentials.password_hash)
+            .verify_password(plain_password, &credentials.password_hash)
             .await
             .map_err(|e| {
                 AuthError::PasswordVerificationError(format!("Password verification failed: {e}"))

@@ -234,7 +234,11 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         // Convert String IDs to Uuid
         let user_id =
             Uuid::parse_str(&user.id).map_err(|e| AuthError::DatabaseError(e.to_string()))?;
-        let cred_user_id = Uuid::parse_str(&user.credentials.user_id)
+        
+        let credentials = user.credentials.as_ref()
+            .ok_or_else(|| AuthError::DatabaseError("User has no credentials".to_string()))?;
+            
+        let cred_user_id = Uuid::parse_str(&credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
 
         // Insert into cryptic_users
@@ -248,8 +252,8 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
         sqlx::query!(
             "INSERT INTO cryptic_credentials (user_id, identifier, password_hash) VALUES ($1, $2, $3)",
             cred_user_id,
-            user.credentials.identifier,
-            user.credentials.password_hash
+            credentials.identifier,
+            credentials.password_hash
         )
         .execute(&mut *conn)
         .await
@@ -283,11 +287,14 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
 
         Some(User {
             id: rec.id.to_string(),
-            credentials: crate::core::credentials::Credentials {
+            credentials: Some(crate::core::credentials::Credentials {
                 user_id: rec.user_id.to_string(),
                 identifier: rec.identifier,
                 password_hash: rec.password_hash,
-            },
+            }),
+            oauth_accounts: std::collections::HashMap::new(),
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
         })
     }
 
@@ -315,11 +322,14 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
 
         Some(User {
             id: rec.id.to_string(),
-            credentials: crate::core::credentials::Credentials {
+            credentials: Some(crate::core::credentials::Credentials {
                 user_id: rec.user_id.to_string(),
                 identifier: rec.identifier,
                 password_hash: rec.password_hash,
-            },
+            }),
+            oauth_accounts: std::collections::HashMap::new(),
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
         })
     }
 
@@ -333,15 +343,18 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     ///
     /// Returns [`Ok(())`] on success, or [`AuthError::DatabaseError`] on failure.
     async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
+        let credentials = user.credentials.as_ref()
+            .ok_or_else(|| AuthError::DatabaseError("User has no credentials".to_string()))?;
+            
         // Convert String user_id to Uuid
-        let cred_user_id = Uuid::parse_str(&user.credentials.user_id)
+        let cred_user_id = Uuid::parse_str(&credentials.user_id)
             .map_err(|e| AuthError::DatabaseError(e.to_string()))?;
         let mut conn = self.conn.lock().await;
         // Update credentials (identifier and password_hash)
         sqlx::query!(
             "UPDATE cryptic_credentials SET identifier = $1, password_hash = $2 WHERE user_id = $3",
-            user.credentials.identifier,
-            user.credentials.password_hash,
+            credentials.identifier,
+            credentials.password_hash,
             cred_user_id
         )
         .execute(&mut *conn)
