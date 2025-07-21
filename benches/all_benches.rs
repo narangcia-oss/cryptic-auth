@@ -233,7 +233,7 @@ fn bench_in_memory_repo_operations(c: &mut Criterion) {
             let mut user = users[500].clone();
             user.credentials.as_mut().unwrap().identifier =
                 format!("updated_username_{}", black_box(500));
-            let result = repo.update_user(black_box(user)).await;
+            let result = repo.update_user(black_box(&user)).await;
             black_box(result)
         })
     });

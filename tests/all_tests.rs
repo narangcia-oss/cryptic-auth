@@ -269,7 +269,7 @@ async fn test_in_memory_user_repo_update_user() {
     repo.add_user(user.clone()).await.expect("Add user failed");
     // Update identifier
     user.credentials.as_mut().unwrap().identifier = "user2_updated".to_string();
-    let update_result = repo.update_user(user.clone()).await;
+    let update_result = repo.update_user(&user).await;
     assert!(update_result.is_ok());
     let fetched = repo.get_user_by_id("id2").await.unwrap();
     assert_eq!(
