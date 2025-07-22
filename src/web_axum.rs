@@ -59,7 +59,10 @@ use std::sync::Arc;
 ///
 /// # Panics
 /// Panics if the TCP listener cannot bind or the server fails to start.
-pub async fn start_server(auth_service: Arc<AuthService>, address: impl Into<Option<std::net::SocketAddr>>) {
+pub async fn start_server(
+    auth_service: Arc<AuthService>,
+    address: impl Into<Option<std::net::SocketAddr>>,
+) {
     use axum::routing::{get, post};
     use axum::serve;
     use tokio::net::TcpListener;
@@ -75,7 +78,9 @@ pub async fn start_server(auth_service: Arc<AuthService>, address: impl Into<Opt
         .route("/oauth/login", post(oauth_login_handler))
         .with_state(auth_service);
 
-    let addr = address.into().unwrap_or_else(|| std::net::SocketAddr::from(([0, 0, 0, 0], 3000)));
+    let addr = address
+        .into()
+        .unwrap_or_else(|| std::net::SocketAddr::from(([0, 0, 0, 0], 3000)));
     println!("Axum server running at http://{addr}");
     let listener = TcpListener::bind(addr).await.unwrap();
     serve(listener, app).await.unwrap();
