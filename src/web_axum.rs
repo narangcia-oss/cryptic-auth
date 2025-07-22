@@ -63,25 +63,14 @@ pub async fn start_server(
     auth_service: Arc<AuthService>,
     address: impl Into<Option<std::net::SocketAddr>>,
 ) {
-    use axum::routing::{get, post};
     use axum::serve;
     use tokio::net::TcpListener;
-    let app = Router::new()
-        .route("/signup", post(signup_handler))
-        .route("/login", post(login_handler))
-        .route("/health", get(health_handler).post(health_handler))
-        .route("/token/refresh", post(refresh_token_handler))
-        .route("/token/validate", post(validate_token_handler))
-        .route("/oauth/{provider}/auth", get(oauth_auth_handler))
-        .route("/oauth/{provider}/callback", get(oauth_callback_handler))
-        .route("/oauth/signup", post(oauth_signup_handler))
-        .route("/oauth/login", post(oauth_login_handler))
-        .with_state(auth_service);
+    let app = get_cryptic_axum_router(auth_service.clone());
 
     let addr = address
         .into()
         .unwrap_or_else(|| std::net::SocketAddr::from(([0, 0, 0, 0], 3000)));
-    println!("Axum server running at http://{addr}");
+    log::info!("Axum server running at http://{addr}");
     let listener = TcpListener::bind(addr).await.unwrap();
     serve(listener, app).await.unwrap();
 }
