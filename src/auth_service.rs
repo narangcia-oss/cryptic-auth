@@ -364,70 +364,6 @@ impl AuthService {
         }
     }
 
-    /// Registers a new user in the system.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use [`signup`] with [`SignupMethod::Credentials`] instead.
-    ///
-    /// # Arguments
-    /// * `user` - The [`User`] object to register.
-    ///
-    /// # Returns
-    /// Returns `Ok(())` if registration is successful, or an [`AuthError`] if registration fails.
-    #[deprecated(since = "0.3.0", note = "Use signup with SignupMethod instead")]
-    pub async fn signup_user(&self, user: User) -> Result<(), AuthError> {
-        self.persistent_users_manager
-            .add_user(user)
-            .await
-            .map(|_user| ()) // Discard the returned User, return ()
-            .map_err(|e| AuthError::NotImplemented(format!("signup: {e}")))
-    }
-
-    /// Attempts to log in a user by verifying their credentials.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use [`login`] with [`LoginMethod::Credentials`] instead.
-    ///
-    /// # Arguments
-    /// * `identifier` - The user identifier (e.g., username or email).
-    /// * `plain_password` - The user's plain text password.
-    ///
-    /// # Returns
-    /// Returns the [`User`] if login is successful, or an [`AuthError`] if authentication fails.
-    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
-    pub async fn login_with_credentials(
-        &self,
-        identifier: &str,
-        plain_password: &str,
-    ) -> Result<User, AuthError> {
-        // Find user by identifier (assuming identifier is stored in credentials.identifier)
-        let stored_user = self
-            .persistent_users_manager
-            .get_user_by_identifier(identifier)
-            .await
-            .ok_or(AuthError::InvalidCredentials)?;
-
-        // Verify the password using the password manager from the service
-        let credentials = stored_user
-            .credentials
-            .as_ref()
-            .ok_or(AuthError::InvalidCredentials)?;
-
-        let is_valid = self
-            .password_manager
-            .verify_password(plain_password, &credentials.password_hash)
-            .await
-            .map_err(|e| {
-                AuthError::PasswordVerificationError(format!("Password verification failed: {e}"))
-            })?;
-
-        if is_valid {
-            Ok(stored_user)
-        } else {
-            Err(AuthError::InvalidCredentials)
-        }
-    }
-
     /// Generates a new token pair (access and refresh tokens) for a given user ID.
     ///
     /// # Arguments
@@ -488,30 +424,6 @@ impl AuthService {
     /// Returns `true` if the token is expired or invalid, `false` otherwise.
     pub async fn is_token_expired(&self, token: &str) -> bool {
         self.validate_access_token(token).await.is_err()
-    }
-
-    /// Complete login flow that returns both the user and a new token pair.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use [`login`] with [`LoginMethod::Credentials`] instead.
-    ///
-    /// # Arguments
-    /// * `identifier` - The user identifier (e.g., username or email).
-    /// * `plain_password` - The user's plain text password.
-    ///
-    /// # Returns
-    /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
-    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
-    pub async fn login_with_credentials_and_tokens(
-        &self,
-        identifier: &str,
-        plain_password: &str,
-    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
-        self.login(LoginMethod::Credentials {
-            identifier: identifier.to_string(),
-            password: plain_password.to_string(),
-        })
-        .await
     }
 
     /// Validates a token and retrieves the associated user from the repository.
@@ -597,87 +509,6 @@ impl AuthService {
         token: &crate::core::oauth::store::OAuth2Token,
     ) -> Result<crate::core::oauth::store::OAuth2Token, AuthError> {
         self.oauth2_manager.refresh_token(token).await
-    }
-
-    /// Complete OAuth2 login flow that creates or links a user account and returns tokens.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use [`login`] with [`LoginMethod::OAuth2`] instead.
-    ///
-    /// # Arguments
-    /// * `provider` - The OAuth2 provider.
-    /// * `code` - The authorization code received from the provider.
-    /// * `state` - The state parameter for verification.
-    ///
-    /// # Returns
-    /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
-    #[deprecated(since = "0.3.0", note = "Use login with LoginMethod instead")]
-    pub async fn login_with_oauth2(
-        &self,
-        provider: crate::core::oauth::store::OAuth2Provider,
-        code: &str,
-        state: &str,
-    ) -> Result<(User, crate::core::token::TokenPair), AuthError> {
-        // Exchange code for token
-        let oauth_token = self
-            .exchange_oauth2_code_for_token(provider, code, state)
-            .await?;
-
-        // Fetch user info from OAuth provider
-        let oauth_user_info = self.fetch_oauth2_user_info(&oauth_token).await?;
-
-        // Try to find existing user by OAuth provider and user ID
-        let existing_user = self
-            .persistent_users_manager
-            .get_user_by_oauth_id(provider, &oauth_user_info.provider_user_id)
-            .await;
-
-        let user = if let Some(mut user) = existing_user {
-            // Update OAuth account info with correct user_id
-            let linked_oauth_info = crate::core::oauth::manager::OAuth2Manager::link_to_user(
-                oauth_user_info,
-                user.id.clone(),
-            );
-            user.oauth_accounts.insert(provider, linked_oauth_info);
-            user.updated_at = chrono::Utc::now().naive_utc();
-            self.persistent_users_manager.update_user(&user).await?;
-            user
-        } else {
-            // Check if user exists by email (if provided)
-            let existing_user_by_email = if let Some(ref email) = oauth_user_info.email {
-                self.persistent_users_manager
-                    .get_user_by_identifier(email)
-                    .await
-            } else {
-                None
-            };
-
-            if let Some(mut user) = existing_user_by_email {
-                // Link OAuth account to existing user with correct user_id
-                let linked_oauth_info = crate::core::oauth::manager::OAuth2Manager::link_to_user(
-                    oauth_user_info,
-                    user.id.clone(),
-                );
-                user.oauth_accounts.insert(provider, linked_oauth_info);
-                user.updated_at = chrono::Utc::now().naive_utc();
-                self.persistent_users_manager.update_user(&user).await?;
-                user
-            } else {
-                // Create new user from OAuth info
-                let user_id = uuid::Uuid::new_v4().to_string();
-                let new_user = User::from_oauth(user_id, oauth_user_info);
-
-                self.persistent_users_manager
-                    .add_user(new_user.clone())
-                    .await?;
-                new_user
-            }
-        };
-
-        // Generate tokens for the user
-        let tokens = self.get_tokens(user.id.clone()).await?;
-
-        Ok((user, tokens))
     }
 
     /// Links an OAuth account to an existing user.
