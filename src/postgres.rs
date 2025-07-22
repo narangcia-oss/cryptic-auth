@@ -50,6 +50,9 @@ impl PgUserRepo {
         use sqlx::Row;
         // Check if the cryptic_users table exists
         // Check cryptic_users table
+        // Check if the cryptic_users table exists using a connection pool
+        // Acquire a connection from the pool
+        // Check if the cryptic_users table exists using a connection pool
         let user_cols = sqlx::query(
             r#"SELECT column_name, data_type, is_nullable
                 FROM information_schema.columns
