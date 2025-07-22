@@ -155,6 +155,7 @@ impl OAuth2Manager {
                     .to_string();
 
                 Ok(OAuth2UserInfo {
+                    user_id: String::new(), // Will be set when linking to cryptic user
                     provider,
                     provider_user_id,
                     email,
@@ -186,6 +187,7 @@ impl OAuth2Manager {
                 };
 
                 Ok(OAuth2UserInfo {
+                    user_id: String::new(), // Will be set when linking to cryptic user
                     provider,
                     provider_user_id,
                     email,
@@ -216,6 +218,7 @@ impl OAuth2Manager {
                 let locale = response_body["locale"].as_str().map(|s| s.to_string());
 
                 Ok(OAuth2UserInfo {
+                    user_id: String::new(), // Will be set when linking to cryptic user
                     provider,
                     provider_user_id,
                     email,
@@ -239,6 +242,7 @@ impl OAuth2Manager {
                     .to_string();
 
                 Ok(OAuth2UserInfo {
+                    user_id: String::new(), // Will be set when linking to cryptic user
                     provider,
                     provider_user_id,
                     email,
@@ -388,6 +392,77 @@ impl OAuth2Service for OAuth2Manager {
             .map_err(|e| AuthError::OAuthInvalidResponse(format!("Invalid JSON response: {e}")))?;
 
         self.parse_user_info(token.provider, response_body).await
+    }
+
+    /// Refreshes the access token using the refresh token for the specified provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The [`OAuth2Token`] containing the refresh token and provider.
+    ///
+    /// # Returns
+    ///
+    /// Returns a new [`OAuth2Token`] on success, or [`AuthError`] on failure.
+    async fn refresh_token(&self, token: &OAuth2Token) -> Result<OAuth2Token, AuthError> {
+        let client = self.get_client(token.provider)?;
+
+        let refresh_token = token.refresh_token.as_ref().ok_or_else(|| {
+            AuthError::OAuthTokenExchange("No refresh token available".to_string())
+        })?;
+
+        let token_result = client
+            .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
+            .request_async(&reqwest::Client::new())
+            .await
+            .map_err(|e| AuthError::OAuthTokenExchange(format!("Token refresh failed: {e}")))?;
+
+        let access_token = token_result.access_token().secret().clone();
+        let new_refresh_token = token_result
+            .refresh_token()
+            .map(|rt| rt.secret().clone())
+            .or_else(|| token.refresh_token.clone());
+        let expires_at = token_result.expires_in().map(|duration| {
+            chrono::Utc::now().naive_utc()
+                + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
+        });
+        let token_type = token_result.token_type().as_ref().to_string();
+        let scope = token_result
+            .scopes()
+            .map(|scopes| {
+                scopes
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .or_else(|| token.scope.clone());
+
+        Ok(OAuth2Token {
+            access_token,
+            refresh_token: new_refresh_token,
+            expires_at,
+            token_type,
+            scope,
+            provider: token.provider,
+            created_at: chrono::Utc::now().naive_utc(),
+        })
+    }
+}
+
+impl OAuth2Manager {
+    /// Sets the user_id field in OAuth2UserInfo to link it to a cryptic user.
+    ///
+    /// # Arguments
+    ///
+    /// * `oauth_info` - The OAuth user info to update.
+    /// * `user_id` - The cryptic user ID to link to.
+    ///
+    /// # Returns
+    ///
+    /// The updated OAuth2UserInfo with the user_id set.
+    pub fn link_to_user(mut oauth_info: OAuth2UserInfo, user_id: String) -> OAuth2UserInfo {
+        oauth_info.user_id = user_id;
+        oauth_info
     }
 
     /// Refreshes the access token using the refresh token for the specified provider.

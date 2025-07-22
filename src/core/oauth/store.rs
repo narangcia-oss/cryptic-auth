@@ -90,6 +90,7 @@ impl OAuth2Token {
 /// Represents user information returned by an OAuth2 provider.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OAuth2UserInfo {
+    pub user_id: String,
     /// The OAuth2 provider.
     pub provider: OAuth2Provider,
     /// The unique user ID from the provider.

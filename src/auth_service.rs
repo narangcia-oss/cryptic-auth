@@ -633,8 +633,12 @@ impl AuthService {
             .await;
 
         let user = if let Some(mut user) = existing_user {
-            // Update OAuth account info
-            user.oauth_accounts.insert(provider, oauth_user_info);
+            // Update OAuth account info with correct user_id
+            let linked_oauth_info = crate::core::oauth::manager::OAuth2Manager::link_to_user(
+                oauth_user_info,
+                user.id.clone(),
+            );
+            user.oauth_accounts.insert(provider, linked_oauth_info);
             user.updated_at = chrono::Utc::now().naive_utc();
             self.persistent_users_manager.update_user(&user).await?;
             user
@@ -649,20 +653,19 @@ impl AuthService {
             };
 
             if let Some(mut user) = existing_user_by_email {
-                // Link OAuth account to existing user
-                user.oauth_accounts.insert(provider, oauth_user_info);
+                // Link OAuth account to existing user with correct user_id
+                let linked_oauth_info = crate::core::oauth::manager::OAuth2Manager::link_to_user(
+                    oauth_user_info,
+                    user.id.clone(),
+                );
+                user.oauth_accounts.insert(provider, linked_oauth_info);
                 user.updated_at = chrono::Utc::now().naive_utc();
                 self.persistent_users_manager.update_user(&user).await?;
                 user
             } else {
-                // Create new user
-                let mut new_user = User {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    ..User::default()
-                };
-                new_user.oauth_accounts.insert(provider, oauth_user_info);
-                new_user.created_at = chrono::Utc::now().naive_utc();
-                new_user.updated_at = new_user.created_at;
+                // Create new user from OAuth info
+                let user_id = uuid::Uuid::new_v4().to_string();
+                let new_user = User::from_oauth(user_id, oauth_user_info);
 
                 self.persistent_users_manager
                     .add_user(new_user.clone())
@@ -675,5 +678,104 @@ impl AuthService {
         let tokens = self.get_tokens(user.id.clone()).await?;
 
         Ok((user, tokens))
+    }
+
+    /// Links an OAuth account to an existing user.
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the existing user.
+    /// * `provider` - The OAuth2 provider.
+    /// * `code` - The authorization code from the OAuth provider.
+    /// * `state` - The state parameter for CSRF protection.
+    ///
+    /// # Returns
+    /// Returns the updated user on success.
+    ///
+    /// # Errors
+    /// Returns [`AuthError`] if the user doesn't exist, OAuth exchange fails, or linking fails.
+    pub async fn link_oauth_account(
+        &self,
+        user_id: &str,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        code: &str,
+        state: &str,
+    ) -> Result<User, AuthError> {
+        // Get the existing user
+        let mut user = self
+            .persistent_users_manager
+            .get_user_by_id(user_id)
+            .await
+            .ok_or(AuthError::UserNotFound)?;
+
+        // Exchange code for token
+        let oauth_token = self
+            .exchange_oauth2_code_for_token(provider, code, state)
+            .await?;
+
+        // Fetch user info from OAuth provider
+        let oauth_user_info = self.fetch_oauth2_user_info(&oauth_token).await?;
+
+        // Link the OAuth account to the user
+        user = user.link_oauth_account(oauth_user_info);
+
+        // Update the user in storage
+        self.persistent_users_manager.update_user(&user).await?;
+
+        Ok(user)
+    }
+
+    /// Unlinks an OAuth account from a user.
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user.
+    /// * `provider` - The OAuth2 provider to unlink.
+    ///
+    /// # Returns
+    /// Returns the updated user on success.
+    ///
+    /// # Errors
+    /// Returns [`AuthError`] if the user doesn't exist or update fails.
+    pub async fn unlink_oauth_account(
+        &self,
+        user_id: &str,
+        provider: crate::core::oauth::store::OAuth2Provider,
+    ) -> Result<User, AuthError> {
+        // Get the existing user
+        let mut user = self
+            .persistent_users_manager
+            .get_user_by_id(user_id)
+            .await
+            .ok_or(AuthError::UserNotFound)?;
+
+        // Unlink the OAuth account
+        user.unlink_oauth_account(provider);
+
+        // Update the user in storage
+        self.persistent_users_manager.update_user(&user).await?;
+
+        Ok(user)
+    }
+
+    /// Gets all linked OAuth accounts for a user.
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user.
+    ///
+    /// # Returns
+    /// Returns a vector of OAuth providers that are linked to the user.
+    ///
+    /// # Errors
+    /// Returns [`AuthError`] if the user doesn't exist.
+    pub async fn get_linked_oauth_providers(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<crate::core::oauth::store::OAuth2Provider>, AuthError> {
+        let user = self
+            .persistent_users_manager
+            .get_user_by_id(user_id)
+            .await
+            .ok_or(AuthError::UserNotFound)?;
+
+        Ok(user.oauth_accounts.keys().copied().collect())
     }
 }

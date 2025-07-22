@@ -1,25 +1,20 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT u.id, c.user_id, c.identifier, c.password_hash\n                FROM cryptic_users u\n                JOIN cryptic_credentials c ON u.id = c.user_id\n                WHERE u.id = $1",
+  "query": "SELECT user_id, identifier, password_hash FROM cryptic_credentials WHERE user_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 1,
         "name": "user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 2,
+        "ordinal": 1,
         "name": "identifier",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "password_hash",
         "type_info": "Varchar"
       }
@@ -32,9 +27,8 @@
     "nullable": [
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "e58b26cf2d2ecc6b63ca699469611480a178da2e81fe45745ed945d0e81390a4"
+  "hash": "cbddef02f327a14352d835828d5a9405d05feaa23883a554b387f0d3228218c5"
 }

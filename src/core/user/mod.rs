@@ -130,6 +130,80 @@ impl User {
             updated_at: chrono::Utc::now().naive_utc(),
         })
     }
+
+    /// Links an OAuth account to this user.
+    ///
+    /// # Arguments
+    /// * `oauth_info` - The OAuth user info to link to this user.
+    ///
+    /// # Returns
+    /// The updated user with the OAuth account linked.
+    pub fn link_oauth_account(mut self, mut oauth_info: OAuth2UserInfo) -> Self {
+        oauth_info.user_id = self.id.clone();
+        self.oauth_accounts.insert(oauth_info.provider, oauth_info);
+        self.updated_at = chrono::Utc::now().naive_utc();
+        self
+    }
+
+    /// Unlinks an OAuth account from this user.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth provider to unlink.
+    ///
+    /// # Returns
+    /// True if the account was unlinked, false if it wasn't linked.
+    pub fn unlink_oauth_account(&mut self, provider: OAuth2Provider) -> bool {
+        let was_linked = self.oauth_accounts.remove(&provider).is_some();
+        if was_linked {
+            self.updated_at = chrono::Utc::now().naive_utc();
+        }
+        was_linked
+    }
+
+    /// Checks if an OAuth account is linked to this user.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth provider to check.
+    ///
+    /// # Returns
+    /// True if the provider is linked, false otherwise.
+    pub fn has_oauth_account(&self, provider: OAuth2Provider) -> bool {
+        self.oauth_accounts.contains_key(&provider)
+    }
+
+    /// Gets the OAuth account info for a specific provider.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth provider to get info for.
+    ///
+    /// # Returns
+    /// The OAuth user info if linked, None otherwise.
+    pub fn get_oauth_account(&self, provider: OAuth2Provider) -> Option<&OAuth2UserInfo> {
+        self.oauth_accounts.get(&provider)
+    }
+
+    /// Creates a new user from OAuth account info only (no password credentials).
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the user (e.g., UUID).
+    /// * `oauth_info` - The OAuth user info to create the user with.
+    ///
+    /// # Returns
+    /// A new [`User`] instance with the OAuth account linked.
+    pub fn from_oauth(id: String, mut oauth_info: OAuth2UserInfo) -> Self {
+        oauth_info.user_id = id.clone();
+        let now = chrono::Utc::now().naive_utc();
+        let mut oauth_accounts = HashMap::new();
+        oauth_accounts.insert(oauth_info.provider, oauth_info);
+
+        Self {
+            id,
+            credentials: None,
+            oauth_accounts,
+            created_at: now,
+            updated_at: now,
+        }
+    }
 }
 
 /// Persistence traits and types for user storage and retrieval.
