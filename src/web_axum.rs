@@ -12,6 +12,17 @@
 //! - Designed for use with the `AuthService` abstraction.
 //! - Full OAuth2 support for Google, GitHub, Discord, and Microsoft.
 //!
+//! # Credentials-based Flow
+//! 1. POST `/login` - Authenticate user and return access token
+//! Body: `{ "username": "string", "password": "string" }`
+//! 2. POST `/token/refresh` - Refresh access token using refresh token
+//! Body: `{ "refresh_token": "string" }`
+//! 3. POST `/token/validate` - Validate access token and return claims
+//! Body: `{ "token": "string" }`
+//! 4. GET `/health` - Simple health check endpoint
+//! 5. POST `/signup` - Create new user and return access token
+//! Body: `{ "username": "string", "password": "string" }`
+//!
 //! # OAuth2 Flow
 //! 1. GET `/oauth/{provider}/auth?state=...&scopes=...` - Generate authorization URL
 //! 2. User is redirected to provider for authorization
