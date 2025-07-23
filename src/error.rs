@@ -114,6 +114,16 @@ pub enum AuthError {
     #[error("OAuth other error: {0}")]
     OAuthOther(String),
 
+    /// Returned when a user signup operation fails.
+    /// Contains a description of the signup error.
+    #[error("User signup error: {0}")]
+    SignupError(String),
+
+    /// Returned when a user login operation fails.
+    /// Contains a description of the login error.
+    #[error("User login error: {0}")]
+    LoginError(String),
+
     /// Returned when a database error occurs (only available with the `postgres` feature).
     /// Contains a description of the database error.
     #[cfg(feature = "postgres")]

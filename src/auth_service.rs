@@ -293,7 +293,7 @@ impl AuthService {
                 self.persistent_users_manager
                     .add_user(user.clone())
                     .await
-                    .map_err(|e| AuthError::NotImplemented(format!("signup: {e}")))?;
+                    .map_err(|e| AuthError::SignupError(format!("signup: {e}")))?;
 
                 // Generate tokens
                 let tokens = self.get_tokens(user.id.clone()).await?;
