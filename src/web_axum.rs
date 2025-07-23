@@ -25,7 +25,7 @@
 //!
 //! # OAuth2 Flow
 //! 1. GET `/oauth/{provider}/auth?state=...&scopes=...` - Generate authorization URL
-//! 2. User is redirected to provider for authorization
+//! 2. Client should redirect the user to provider (using the returned URL) for authorization
 //! 3. Provider redirects back to GET `/oauth/{provider}/callback?code=...&state=...`
 //! 4. Or use POST `/oauth/login` or `/oauth/signup` with code and state
 //!
