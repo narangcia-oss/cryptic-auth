@@ -120,6 +120,7 @@ async fn signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /signup request: {_body}");
     #[derive(Deserialize)]
     struct SignupRequest {
         username: String,
@@ -129,6 +130,10 @@ async fn signup_handler(
     let req: Result<SignupRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(signup) => {
+            log::info!(
+                "Attempting signup for user: {username}",
+                username = signup.username
+            );
             // Use the new unified signup method with credentials
             match _auth
                 .signup(crate::auth_service::SignupMethod::Credentials {
@@ -137,21 +142,30 @@ async fn signup_handler(
                 })
                 .await
             {
-                Ok((user, _tokens)) => serde_json::json!({
-                    "id": user.id,
-                    "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
-                })
-                .to_string(),
-                Err(e) => serde_json::json!({
-                    "error": e.to_string()
-                })
-                .to_string(),
+                Ok((user, _tokens)) => {
+                    log::info!("Signup successful for user_id: {id}", id = user.id);
+                    serde_json::json!({
+                        "id": user.id,
+                        "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("Signup failed: {e}");
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
             }
         }
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+        Err(e) => {
+            log::info!("Invalid signup request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {e}")
+            })
+            .to_string()
+        }
     }
 }
 
@@ -173,6 +187,7 @@ async fn login_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /login request: {_body}");
     #[derive(Deserialize)]
     struct LoginRequest {
         username: String,
@@ -182,6 +197,10 @@ async fn login_handler(
     let req: Result<LoginRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(login) => {
+            log::info!(
+                "Attempting login for user: {username}",
+                username = login.username
+            );
             match _auth
                 .login(crate::auth_service::LoginMethod::Credentials {
                     identifier: login.username,
@@ -189,23 +208,32 @@ async fn login_handler(
                 })
                 .await
             {
-                Ok((user, tokens)) => serde_json::json!({
-                    "id": user.id,
-                    "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string()),
-                    "access_token": tokens.access_token,
-                    "refresh_token": tokens.refresh_token
-                })
-                .to_string(),
-                Err(e) => serde_json::json!({
-                    "error": e.to_string()
-                })
-                .to_string(),
+                Ok((user, tokens)) => {
+                    log::info!("Login successful for user_id: {id}", id = user.id);
+                    serde_json::json!({
+                        "id": user.id,
+                        "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string()),
+                        "access_token": tokens.access_token,
+                        "refresh_token": tokens.refresh_token
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("Login failed: {e}");
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
             }
         }
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+        Err(e) => {
+            log::info!("Invalid login request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {e}")
+            })
+            .to_string()
+        }
     }
 }
 
@@ -214,6 +242,7 @@ async fn login_handler(
 ///
 /// Returns a simple "OK" string for health checks.
 async fn health_handler() -> String {
+    log::info!("Received /health request");
     "OK".to_string()
 }
 
@@ -235,6 +264,7 @@ async fn refresh_token_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /token/refresh request: {_body}");
     #[derive(Deserialize)]
     struct RefreshRequest {
         refresh_token: String,
@@ -242,21 +272,33 @@ async fn refresh_token_handler(
 
     let req: Result<RefreshRequest, _> = serde_json::from_value(_body);
     match req {
-        Ok(refresh) => match _auth.refresh_access_token(&refresh.refresh_token).await {
-            Ok(tokens) => serde_json::json!({
-                "access_token": tokens.access_token,
-                "refresh_token": tokens.refresh_token
+        Ok(refresh) => {
+            log::info!("Attempting token refresh");
+            match _auth.refresh_access_token(&refresh.refresh_token).await {
+                Ok(tokens) => {
+                    log::info!("Token refresh successful");
+                    serde_json::json!({
+                        "access_token": tokens.access_token,
+                        "refresh_token": tokens.refresh_token
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("Token refresh failed: {e}");
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
+            }
+        }
+        Err(e) => {
+            log::info!("Invalid refresh token request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {}", e)
             })
-            .to_string(),
-            Err(e) => serde_json::json!({
-                "error": e.to_string()
-            })
-            .to_string(),
-        },
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+            .to_string()
+        }
     }
 }
 
@@ -278,6 +320,7 @@ async fn validate_token_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /token/validate request: {_body}");
     #[derive(Deserialize)]
     struct ValidateRequest {
         token: String,
@@ -285,23 +328,38 @@ async fn validate_token_handler(
 
     let req: Result<ValidateRequest, _> = serde_json::from_value(_body);
     match req {
-        Ok(validate) => match _auth.validate_access_token(&validate.token).await {
-            Ok(claims) => serde_json::json!({
-                "valid": true,
-                "subject": claims.get_subject(),
-                "expiration": claims.get_expiration()
+        Ok(validate) => {
+            log::info!("Validating access token");
+            match _auth.validate_access_token(&validate.token).await {
+                Ok(claims) => {
+                    log::info!(
+                        "Token valid for subject: {subject}",
+                        subject = claims.get_subject()
+                    );
+                    serde_json::json!({
+                        "valid": true,
+                        "subject": claims.get_subject(),
+                        "expiration": claims.get_expiration()
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("Token validation failed: {e}");
+                    serde_json::json!({
+                        "valid": false,
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
+            }
+        }
+        Err(e) => {
+            log::info!("Invalid validate token request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {}", e)
             })
-            .to_string(),
-            Err(e) => serde_json::json!({
-                "valid": false,
-                "error": e.to_string()
-            })
-            .to_string(),
-        },
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+            .to_string()
+        }
     }
 }
 
@@ -323,6 +381,7 @@ async fn oauth_auth_handler(
     Path(provider_str): Path<String>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> String {
+    log::info!("Received /oauth/{provider_str}/auth request with params: {params:?}");
     // Parse the provider from the path parameter
     let provider = match provider_str.to_lowercase().as_str() {
         "google" => crate::core::oauth::store::OAuth2Provider::Google,
@@ -358,14 +417,20 @@ async fn oauth_auth_handler(
         .generate_oauth2_auth_url(provider, state, scopes)
         .await
     {
-        Ok(auth_url) => serde_json::json!({
-            "auth_url": auth_url
-        })
-        .to_string(),
-        Err(e) => serde_json::json!({
-            "error": e.to_string()
-        })
-        .to_string(),
+        Ok(auth_url) => {
+            log::info!("Generated OAuth2 auth URL for provider: {provider_str}");
+            serde_json::json!({
+                "auth_url": auth_url
+            })
+            .to_string()
+        }
+        Err(e) => {
+            log::info!("OAuth2 auth URL generation failed: {e}");
+            serde_json::json!({
+                "error": e.to_string()
+            })
+            .to_string()
+        }
     }
 }
 
@@ -387,6 +452,7 @@ async fn oauth_callback_handler(
     Path(provider_str): Path<String>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> String {
+    log::info!("Received /oauth/{provider_str}/callback request with params: {params:?}");
     // Parse the provider from the path parameter
     let provider = match provider_str.to_lowercase().as_str() {
         "google" => crate::core::oauth::store::OAuth2Provider::Google,
@@ -431,16 +497,25 @@ async fn oauth_callback_handler(
         })
         .await
     {
-        Ok((user, tokens)) => serde_json::json!({
-            "id": user.id,
-            "access_token": tokens.access_token,
-            "refresh_token": tokens.refresh_token
-        })
-        .to_string(),
-        Err(e) => serde_json::json!({
-            "error": e.to_string()
-        })
-        .to_string(),
+        Ok((user, tokens)) => {
+            log::info!(
+                "OAuth2 callback login successful for user_id: {id}",
+                id = user.id
+            );
+            serde_json::json!({
+                "id": user.id,
+                "access_token": tokens.access_token,
+                "refresh_token": tokens.refresh_token
+            })
+            .to_string()
+        }
+        Err(e) => {
+            log::info!("OAuth2 callback login failed: {e}");
+            serde_json::json!({
+                "error": e.to_string()
+            })
+            .to_string()
+        }
     }
 }
 
@@ -462,6 +537,7 @@ async fn oauth_signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /oauth/signup request: {_body}");
     #[derive(Deserialize)]
     struct OAuth2SignupRequest {
         provider: String,
@@ -472,6 +548,10 @@ async fn oauth_signup_handler(
     let req: Result<OAuth2SignupRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(signup) => {
+            log::info!(
+                "Attempting OAuth2 signup for provider: {provider}",
+                provider = signup.provider
+            );
             // Parse the provider
             let provider = match signup.provider.to_lowercase().as_str() {
                 "google" => crate::core::oauth::store::OAuth2Provider::Google,
@@ -479,6 +559,10 @@ async fn oauth_signup_handler(
                 "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
                 "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
                 _ => {
+                    log::info!(
+                        "Unsupported OAuth2 provider: {provider}",
+                        provider = signup.provider
+                    );
                     return serde_json::json!({
                         "error": format!("Unsupported OAuth2 provider: {}", signup.provider)
                     })
@@ -495,22 +579,31 @@ async fn oauth_signup_handler(
                 })
                 .await
             {
-                Ok((user, tokens)) => serde_json::json!({
-                    "id": user.id,
-                    "access_token": tokens.access_token,
-                    "refresh_token": tokens.refresh_token
-                })
-                .to_string(),
-                Err(e) => serde_json::json!({
-                    "error": e.to_string()
-                })
-                .to_string(),
+                Ok((user, tokens)) => {
+                    log::info!("OAuth2 signup successful for user_id: {id}", id = user.id);
+                    serde_json::json!({
+                        "id": user.id,
+                        "access_token": tokens.access_token,
+                        "refresh_token": tokens.refresh_token
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("OAuth2 signup failed: {e}");
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
             }
         }
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+        Err(e) => {
+            log::info!("Invalid OAuth2 signup request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {}", e)
+            })
+            .to_string()
+        }
     }
 }
 
@@ -532,6 +625,7 @@ async fn oauth_login_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
 ) -> String {
+    log::info!("Received /oauth/login request: {_body}");
     #[derive(Deserialize)]
     struct OAuth2LoginRequest {
         provider: String,
@@ -542,6 +636,10 @@ async fn oauth_login_handler(
     let req: Result<OAuth2LoginRequest, _> = serde_json::from_value(_body);
     match req {
         Ok(login) => {
+            log::info!(
+                "Attempting OAuth2 login for provider: {provider}",
+                provider = login.provider
+            );
             // Parse the provider
             let provider = match login.provider.to_lowercase().as_str() {
                 "google" => crate::core::oauth::store::OAuth2Provider::Google,
@@ -549,6 +647,10 @@ async fn oauth_login_handler(
                 "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
                 "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
                 _ => {
+                    log::info!(
+                        "Unsupported OAuth2 provider: {provider}",
+                        provider = login.provider
+                    );
                     return serde_json::json!({
                         "error": format!("Unsupported OAuth2 provider: {}", login.provider)
                     })
@@ -565,21 +667,30 @@ async fn oauth_login_handler(
                 })
                 .await
             {
-                Ok((user, tokens)) => serde_json::json!({
-                    "id": user.id,
-                    "access_token": tokens.access_token,
-                    "refresh_token": tokens.refresh_token
-                })
-                .to_string(),
-                Err(e) => serde_json::json!({
-                    "error": e.to_string()
-                })
-                .to_string(),
+                Ok((user, tokens)) => {
+                    log::info!("OAuth2 login successful for user_id: {id}", id = user.id);
+                    serde_json::json!({
+                        "id": user.id,
+                        "access_token": tokens.access_token,
+                        "refresh_token": tokens.refresh_token
+                    })
+                    .to_string()
+                }
+                Err(e) => {
+                    log::info!("OAuth2 login failed: {e}");
+                    serde_json::json!({
+                        "error": e.to_string()
+                    })
+                    .to_string()
+                }
             }
         }
-        Err(e) => serde_json::json!({
-            "error": format!("Invalid request body: {}", e)
-        })
-        .to_string(),
+        Err(e) => {
+            log::info!("Invalid OAuth2 login request body: {e}");
+            serde_json::json!({
+                "error": format!("Invalid request body: {}", e)
+            })
+            .to_string()
+        }
     }
 }
