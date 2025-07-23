@@ -195,7 +195,7 @@ async fn signup_handler(
 async fn login_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /login request: {_body}");
     #[derive(Deserialize)]
     struct LoginRequest {
@@ -225,23 +225,31 @@ async fn login_handler(
                         "access_token": tokens.access_token,
                         "refresh_token": tokens.refresh_token
                     })
-                    .to_string()
+                    .to_string().into_response()
                 }
                 Err(e) => {
-                    log::info!("Login failed: {e}");
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("Login failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid login request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {e}")
-            })
-            .to_string()
+            log::error!("Invalid login request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {e}")
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -272,7 +280,7 @@ async fn health_handler() -> String {
 async fn refresh_token_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /token/refresh request: {_body}");
     #[derive(Deserialize)]
     struct RefreshRequest {
@@ -291,22 +299,31 @@ async fn refresh_token_handler(
                         "refresh_token": tokens.refresh_token
                     })
                     .to_string()
+                    .into_response()
                 }
                 Err(e) => {
-                    log::info!("Token refresh failed: {e}");
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("Token refresh failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid refresh token request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {}", e)
-            })
-            .to_string()
+            log::error!("Invalid refresh token request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {}", e)
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -328,7 +345,7 @@ async fn refresh_token_handler(
 async fn validate_token_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /token/validate request: {_body}");
     #[derive(Deserialize)]
     struct ValidateRequest {
@@ -351,23 +368,32 @@ async fn validate_token_handler(
                         "expiration": claims.get_expiration()
                     })
                     .to_string()
+                    .into_response()
                 }
                 Err(e) => {
-                    log::info!("Token validation failed: {e}");
-                    serde_json::json!({
-                        "valid": false,
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("Token validation failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "valid": false,
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid validate token request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {}", e)
-            })
-            .to_string()
+            log::error!("Invalid validate token request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {}", e)
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -389,7 +415,7 @@ async fn oauth_auth_handler(
     State(_auth): State<Arc<AuthService>>,
     Path(provider_str): Path<String>,
     Query(params): Query<std::collections::HashMap<String, String>>,
-) -> String {
+) -> Response {
     log::info!("Received /oauth/{provider_str}/auth request with params: {params:?}");
     // Parse the provider from the path parameter
     let provider = match provider_str.to_lowercase().as_str() {
@@ -398,10 +424,14 @@ async fn oauth_auth_handler(
         "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
         "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
         _ => {
-            return serde_json::json!({
-                "error": format!("Unsupported OAuth2 provider: {}", provider_str)
-            })
-            .to_string();
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Unsupported OAuth2 provider: {}", provider_str)
+                })
+                .to_string(),
+            )
+                .into_response();
         }
     };
 
@@ -409,10 +439,14 @@ async fn oauth_auth_handler(
     let state = match params.get("state") {
         Some(state) => state,
         None => {
-            return serde_json::json!({
-                "error": "Missing required 'state' parameter"
-            })
-            .to_string();
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": "Missing required 'state' parameter"
+                })
+                .to_string(),
+            )
+                .into_response();
         }
     };
 
@@ -432,13 +466,18 @@ async fn oauth_auth_handler(
                 "auth_url": auth_url
             })
             .to_string()
+            .into_response()
         }
         Err(e) => {
-            log::info!("OAuth2 auth URL generation failed: {e}");
-            serde_json::json!({
-                "error": e.to_string()
-            })
-            .to_string()
+            log::error!("OAuth2 auth URL generation failed: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -460,7 +499,7 @@ async fn oauth_callback_handler(
     State(_auth): State<Arc<AuthService>>,
     Path(provider_str): Path<String>,
     Query(params): Query<std::collections::HashMap<String, String>>,
-) -> String {
+) -> Response {
     log::info!("Received /oauth/{provider_str}/callback request with params: {params:?}");
     // Parse the provider from the path parameter
     let provider = match provider_str.to_lowercase().as_str() {
@@ -469,10 +508,14 @@ async fn oauth_callback_handler(
         "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
         "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
         _ => {
-            return serde_json::json!({
-                "error": format!("Unsupported OAuth2 provider: {}", provider_str)
-            })
-            .to_string();
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Unsupported OAuth2 provider: {}", provider_str)
+                })
+                .to_string(),
+            )
+                .into_response();
         }
     };
 
@@ -480,20 +523,28 @@ async fn oauth_callback_handler(
     let code = match params.get("code") {
         Some(code) => code,
         None => {
-            return serde_json::json!({
-                "error": "Missing required 'code' parameter"
-            })
-            .to_string();
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": "Missing required 'code' parameter"
+                })
+                .to_string(),
+            )
+                .into_response();
         }
     };
 
     let state = match params.get("state") {
         Some(state) => state,
         None => {
-            return serde_json::json!({
-                "error": "Missing required 'state' parameter"
-            })
-            .to_string();
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": "Missing required 'state' parameter"
+                })
+                .to_string(),
+            )
+                .into_response();
         }
     };
 
@@ -517,13 +568,18 @@ async fn oauth_callback_handler(
                 "refresh_token": tokens.refresh_token
             })
             .to_string()
+            .into_response()
         }
         Err(e) => {
-            log::info!("OAuth2 callback login failed: {e}");
-            serde_json::json!({
-                "error": e.to_string()
-            })
-            .to_string()
+            log::error!("OAuth2 callback login failed: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": e.to_string()
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -545,7 +601,7 @@ async fn oauth_callback_handler(
 async fn oauth_signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /oauth/signup request: {_body}");
     #[derive(Deserialize)]
     struct OAuth2SignupRequest {
@@ -568,14 +624,18 @@ async fn oauth_signup_handler(
                 "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
                 "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
                 _ => {
-                    log::info!(
+                    log::error!(
                         "Unsupported OAuth2 provider: {provider}",
                         provider = signup.provider
                     );
-                    return serde_json::json!({
-                        "error": format!("Unsupported OAuth2 provider: {}", signup.provider)
-                    })
-                    .to_string();
+                    return (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": format!("Unsupported OAuth2 provider: {}", signup.provider)
+                        })
+                        .to_string(),
+                    )
+                        .into_response();
                 }
             };
 
@@ -596,22 +656,31 @@ async fn oauth_signup_handler(
                         "refresh_token": tokens.refresh_token
                     })
                     .to_string()
+                    .into_response()
                 }
                 Err(e) => {
-                    log::info!("OAuth2 signup failed: {e}");
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("OAuth2 signup failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid OAuth2 signup request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {}", e)
-            })
-            .to_string()
+            log::error!("Invalid OAuth2 signup request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {}", e)
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
@@ -633,7 +702,7 @@ async fn oauth_signup_handler(
 async fn oauth_login_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /oauth/login request: {_body}");
     #[derive(Deserialize)]
     struct OAuth2LoginRequest {
@@ -656,14 +725,18 @@ async fn oauth_login_handler(
                 "discord" => crate::core::oauth::store::OAuth2Provider::Discord,
                 "microsoft" => crate::core::oauth::store::OAuth2Provider::Microsoft,
                 _ => {
-                    log::info!(
+                    log::error!(
                         "Unsupported OAuth2 provider: {provider}",
                         provider = login.provider
                     );
-                    return serde_json::json!({
-                        "error": format!("Unsupported OAuth2 provider: {}", login.provider)
-                    })
-                    .to_string();
+                    return (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": format!("Unsupported OAuth2 provider: {}", login.provider)
+                        })
+                        .to_string(),
+                    )
+                        .into_response();
                 }
             };
 
@@ -684,22 +757,31 @@ async fn oauth_login_handler(
                         "refresh_token": tokens.refresh_token
                     })
                     .to_string()
+                    .into_response()
                 }
                 Err(e) => {
-                    log::info!("OAuth2 login failed: {e}");
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("OAuth2 login failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid OAuth2 login request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {}", e)
-            })
-            .to_string()
+            log::error!("Invalid OAuth2 login request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {}", e)
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
