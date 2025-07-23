@@ -43,6 +43,7 @@ use crate::auth_service::AuthService;
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
+    response::{IntoResponse, Response},
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -119,7 +120,7 @@ pub fn get_cryptic_axum_router(auth_service: Arc<AuthService>) -> Router {
 async fn signup_handler(
     State(_auth): State<Arc<AuthService>>,
     Json(_body): Json<serde_json::Value>,
-) -> String {
+) -> Response {
     log::info!("Received /signup request: {_body}");
     #[derive(Deserialize)]
     struct SignupRequest {
@@ -148,23 +149,31 @@ async fn signup_handler(
                         "id": user.id,
                         "identifier": user.credentials.as_ref().map(|c| &c.identifier).unwrap_or(&"".to_string())
                     })
-                    .to_string()
+                    .to_string().into_response()
                 }
                 Err(e) => {
-                    log::info!("Signup failed: {e}");
-                    serde_json::json!({
-                        "error": e.to_string()
-                    })
-                    .to_string()
+                    log::error!("Signup failed: {e}");
+                    (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        serde_json::json!({
+                            "error": e.to_string()
+                        })
+                        .to_string(),
+                    )
+                        .into_response()
                 }
             }
         }
         Err(e) => {
-            log::info!("Invalid signup request body: {e}");
-            serde_json::json!({
-                "error": format!("Invalid request body: {e}")
-            })
-            .to_string()
+            log::error!("Invalid signup request body: {e}");
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                serde_json::json!({
+                    "error": format!("Invalid request body: {e}")
+                })
+                .to_string(),
+            )
+                .into_response()
         }
     }
 }
