@@ -39,7 +39,7 @@
 //! # }
 //! ```
 use crate::auth_service::AuthService;
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -48,7 +48,7 @@ use axum::{
 use serde::Deserialize;
 use std::sync::Arc;
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// Starts the Axum web server with all authentication routes.
 ///
 /// Binds to `0.0.0.0:3000` and serves the API endpoints for signup, login, health check,
@@ -76,7 +76,7 @@ pub async fn start_server(
     serve(listener, app).await.unwrap();
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// Returns an Axum `Router` with all Cryptic authentication routes registered.
 ///
 /// This is useful for integrating Cryptic's API into an existing Axum application or for testing.
@@ -103,7 +103,7 @@ pub fn get_cryptic_axum_router(auth_service: Arc<AuthService>) -> Router {
         .with_state(auth_service)
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/signup` endpoint.
 ///
 /// Accepts a JSON body with `username` and `password` fields, creates a new user,
@@ -178,7 +178,7 @@ async fn signup_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/login` endpoint.
 ///
 /// Accepts a JSON body with `username` and `password` fields, authenticates the user,
@@ -254,7 +254,7 @@ async fn login_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/health` endpoint.
 ///
 /// Returns a simple "OK" string for health checks.
@@ -263,7 +263,7 @@ async fn health_handler() -> String {
     "OK".to_string()
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/token/refresh` endpoint.
 ///
 /// Accepts a JSON body with a `refresh_token` field, and returns new access and refresh tokens
@@ -328,7 +328,7 @@ async fn refresh_token_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/token/validate` endpoint.
 ///
 /// Accepts a JSON body with a `token` field, validates the access token, and returns
@@ -398,7 +398,7 @@ async fn validate_token_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/oauth/{provider}/auth` endpoint.
 ///
 /// Generates an OAuth2 authorization URL for the specified provider.
@@ -482,7 +482,7 @@ async fn oauth_auth_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/oauth/{provider}/callback` endpoint.
 ///
 /// Handles OAuth2 callback from providers. This endpoint would typically be called
@@ -584,7 +584,7 @@ async fn oauth_callback_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/oauth/signup` endpoint.
 ///
 /// Handles OAuth2 signup/registration using an authorization code.
@@ -685,7 +685,7 @@ async fn oauth_signup_handler(
     }
 }
 
-#[cfg(feature = "web")]
+#[cfg(feature = "axum")]
 /// HTTP handler for the `/oauth/login` endpoint.
 ///
 /// Handles OAuth2 login using an authorization code.
