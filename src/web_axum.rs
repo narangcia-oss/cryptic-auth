@@ -12,30 +12,328 @@
 //! - Designed for use with the `AuthService` abstraction.
 //! - Full OAuth2 support for Google, GitHub, Discord, and Microsoft.
 //!
-//! # Credentials-based Flow
-//! 1. POST `/login` - Authenticate user and return access token
-//! Body: `{ "username": "string", "password": "string" }`
-//! 2. POST `/token/refresh` - Refresh access token using refresh token
-//! Body: `{ "refresh_token": "string" }`
-//! 3. POST `/token/validate` - Validate access token and return claims
-//! Body: `{ "token": "string" }`
-//! 4. GET `/health` - Simple health check endpoint
-//! 5. POST `/signup` - Create new user and return access token
-//! Body: `{ "username": "string", "password": "string" }`
+//! # API Endpoints Reference
 //!
-//! # OAuth2 Flow
-//! 1. GET `/oauth/{provider}/auth?state=...&scopes=...` - Generate authorization URL
-//! 2. Client should redirect the user to provider (using the returned URL) for authorization
-//! 3. Provider redirects back to GET `/oauth/{provider}/callback?code=...&state=...`
-//! 4. Or use POST `/oauth/login` or `/oauth/signup` with code and state
+//! ## Authentication Endpoints
 //!
-//! # Example
+//! ### POST `/signup`
+//! Create a new user account with username and password.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "username": "john_doe",
+//!   "password": "secure_password123"
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "id": "user-uuid-here",
+//!   "identifier": "john_doe"
+//! }
+//! ```
+//!
+//! **Error Response (400/500):**
+//! ```json
+//! {
+//!   "error": "Username already exists"
+//! }
+//! ```
+//!
+//! ### POST `/login`
+//! Authenticate user and receive access and refresh tokens.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "username": "john_doe",
+//!   "password": "secure_password123"
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "id": "user-uuid-here",
+//!   "identifier": "john_doe",
+//!   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+//!   "refresh_token": "refresh-token-string-here"
+//! }
+//! ```
+//!
+//! **Error Response (401/400):**
+//! ```json
+//! {
+//!   "error": "Invalid credentials"
+//! }
+//! ```
+//!
+//! ## Token Management
+//!
+//! ### POST `/token/refresh`
+//! Refresh an expired access token using a valid refresh token.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "refresh_token": "refresh-token-string-here"
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "access_token": "new-access-token-here",
+//!   "refresh_token": "new-or-same-refresh-token"
+//! }
+//! ```
+//!
+//! ### POST `/token/validate`
+//! Validate an access token and get user claims.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "valid": true,
+//!   "claims": {
+//!     "sub": "user-uuid-here",
+//!     "exp": 1640995200
+//!   }
+//! }
+//! ```
+//!
+//! ## OAuth2 Endpoints
+//!
+//! ### GET `/oauth/{provider}/auth`
+//! Generate OAuth2 authorization URL for the specified provider.
+//! Supported providers: `google`, `github`, `discord`, `microsoft`
+//!
+//! **Query Parameters:**
+//! - `state` (required): CSRF protection state parameter
+//! - `scopes` (optional): Comma-separated additional scopes
+//!
+//! **Example Request:**
+//! ```
+//! GET /oauth/google/auth?state=random-csrf-token&scopes=openid,email,profile
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=..."
+//! }
+//! ```
+//!
+//! ### GET `/oauth/{provider}/callback`
+//! OAuth2 callback endpoint (usually called by the provider after user authorization).
+//!
+//! **Query Parameters:**
+//! - `code` (required): Authorization code from provider
+//! - `state` (required): State parameter for CSRF verification
+//!
+//! **Example:**
+//! ```
+//! GET /oauth/google/callback?code=auth-code-from-provider&state=random-csrf-token
+//! ```
+//!
+//! ### POST `/oauth/signup`
+//! Create a new user account using OAuth2 authorization code.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "provider": "google",
+//!   "code": "authorization-code-from-provider",
+//!   "state": "random-csrf-token"
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "id": "user-uuid-here",
+//!   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+//!   "refresh_token": "refresh-token-string-here",
+//!   "oauth_info": {
+//!     "provider": "google",
+//!     "email": "user@example.com",
+//!     "name": "John Doe"
+//!   }
+//! }
+//! ```
+//!
+//! ### POST `/oauth/login`
+//! Login with an existing OAuth2 account.
+//!
+//! **Request:**
+//! ```json
+//! {
+//!   "provider": "google",
+//!   "code": "authorization-code-from-provider",
+//!   "state": "random-csrf-token"
+//! }
+//! ```
+//!
+//! **Success Response (200):**
+//! ```json
+//! {
+//!   "id": "user-uuid-here",
+//!   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+//!   "refresh_token": "refresh-token-string-here"
+//! }
+//! ```
+//!
+//! ## Health Check
+//!
+//! ### GET `/health`
+//! Simple health check endpoint.
+//!
+//! **Response (200):**
+//! ```
+//! OK
+//! ```
+//!
+//! # Client Usage Examples
+//!
+//! ## Basic Authentication Flow (JavaScript/TypeScript)
+//!
+//! ```javascript
+//! // 1. Sign up a new user
+//! const signupResponse = await fetch('http://localhost:3000/signup', {
+//!   method: 'POST',
+//!   headers: { 'Content-Type': 'application/json' },
+//!   body: JSON.stringify({
+//!     username: 'john_doe',
+//!     password: 'secure_password123'
+//!   })
+//! });
+//! const userData = await signupResponse.json();
+//!
+//! // 2. Login and get tokens
+//! const loginResponse = await fetch('http://localhost:3000/login', {
+//!   method: 'POST',
+//!   headers: { 'Content-Type': 'application/json' },
+//!   body: JSON.stringify({
+//!     username: 'john_doe',
+//!     password: 'secure_password123'
+//!   })
+//! });
+//! const { access_token, refresh_token } = await loginResponse.json();
+//!
+//! // 3. Use access token for authenticated requests
+//! const protectedResponse = await fetch('http://your-api.com/protected', {
+//!   headers: { 'Authorization': `Bearer ${access_token}` }
+//! });
+//!
+//! // 4. Refresh token when needed
+//! const refreshResponse = await fetch('http://localhost:3000/token/refresh', {
+//!   method: 'POST',
+//!   headers: { 'Content-Type': 'application/json' },
+//!   body: JSON.stringify({ refresh_token })
+//! });
+//! const { access_token: newAccessToken } = await refreshResponse.json();
+//! ```
+//!
+//! ## OAuth2 Flow (JavaScript/TypeScript)
+//!
+//! ```javascript
+//! // 1. Generate authorization URL
+//! const state = crypto.randomUUID(); // Generate CSRF token
+//! const authResponse = await fetch(
+//!   `http://localhost:3000/oauth/google/auth?state=${state}&scopes=openid,email,profile`
+//! );
+//! const { authorization_url } = await authResponse.json();
+//!
+//! // 2. Redirect user to authorization URL
+//! window.location.href = authorization_url;
+//!
+//! // 3. Handle callback (in your redirect URI handler)
+//! const urlParams = new URLSearchParams(window.location.search);
+//! const code = urlParams.get('code');
+//! const returnedState = urlParams.get('state');
+//!
+//! // Verify state matches what you sent
+//! if (returnedState !== state) {
+//!   throw new Error('State mismatch - possible CSRF attack');
+//! }
+//!
+//! // 4. Complete OAuth signup/login
+//! const oauthResponse = await fetch('http://localhost:3000/oauth/signup', {
+//!   method: 'POST',
+//!   headers: { 'Content-Type': 'application/json' },
+//!   body: JSON.stringify({
+//!     provider: 'google',
+//!     code,
+//!     state: returnedState
+//!   })
+//! });
+//! const { access_token, refresh_token, oauth_info } = await oauthResponse.json();
+//! ```
+//!
+//! ## cURL Examples
+//!
+//! ```bash
+//! # Sign up
+//! curl -X POST http://localhost:3000/signup \
+//!   -H "Content-Type: application/json" \
+//!   -d '{"username":"john_doe","password":"secure_password123"}'
+//!
+//! # Login
+//! curl -X POST http://localhost:3000/login \
+//!   -H "Content-Type: application/json" \
+//!   -d '{"username":"john_doe","password":"secure_password123"}'
+//!
+//! # Refresh token
+//! curl -X POST http://localhost:3000/token/refresh \
+//!   -H "Content-Type: application/json" \
+//!   -d '{"refresh_token":"your-refresh-token-here"}'
+//!
+//! # Validate token
+//! curl -X POST http://localhost:3000/token/validate \
+//!   -H "Content-Type: application/json" \
+//!   -d '{"token":"your-access-token-here"}'
+//!
+//! # Get OAuth authorization URL
+//! curl "http://localhost:3000/oauth/google/auth?state=csrf-token"
+//!
+//! # OAuth signup
+//! curl -X POST http://localhost:3000/oauth/signup \
+//!   -H "Content-Type: application/json" \
+//!   -d '{"provider":"google","code":"auth-code","state":"csrf-token"}'
+//! ```
+//!
+//! # Error Handling
+//!
+//! All error responses follow this format:
+//! ```json
+//! {
+//!   "error": "Descriptive error message"
+//! }
+//! ```
+//!
+//! Common HTTP status codes:
+//! - `200`: Success
+//! - `400`: Bad Request (invalid JSON, missing fields)
+//! - `401`: Unauthorized (invalid credentials, expired token)
+//! - `409`: Conflict (username already exists)
+//! - `500`: Internal Server Error
+//!
+//! # Server Setup Example
 //! ```no_run
 //! use cryptic::auth_service::AuthService;
 //! use cryptic::web_axum::start_server;
 //! use std::sync::Arc;
 //! # async fn run(auth_service: Arc<AuthService>) {
-//!     start_server(auth_service).await;
+//!     start_server(auth_service, None).await;
 //! # }
 //! ```
 use crate::auth_service::AuthService;
