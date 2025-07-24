@@ -305,6 +305,7 @@ impl OAuth2Service for OAuth2Manager {
         let client = self.get_client(provider)?;
 
         let config = self.configs.get(&provider).unwrap();
+        // Dans ton code Rust, assure-toi de dédupliquer les scopes
         let mut all_scopes = provider
             .default_scopes()
             .into_iter()
@@ -312,10 +313,13 @@ impl OAuth2Service for OAuth2Manager {
             .collect::<Vec<_>>();
 
         if let Some(additional_scopes) = scopes {
-            debug!("Adding additional scopes: {additional_scopes:?}");
             all_scopes.extend(additional_scopes);
         }
         all_scopes.extend(config.additional_scopes.clone());
+
+        // Déduplication des scopes
+        all_scopes.sort();
+        all_scopes.dedup();
 
         debug!("Final scopes for auth URL: {all_scopes:?}");
         let mut auth_request = client.authorize_url(|| CsrfToken::new(state.to_string()));
