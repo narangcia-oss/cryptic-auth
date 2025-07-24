@@ -123,6 +123,8 @@ pub struct OAuth2Config {
     pub client_secret: String,
     /// The redirect URI for OAuth2 callbacks.
     pub redirect_uri: String,
+    /// The redirect URI for the user to go back to the frontend application.
+    pub redirect_frontend_uri: String,
     /// Additional scopes to request during authentication.
     pub additional_scopes: Vec<String>,
 }
