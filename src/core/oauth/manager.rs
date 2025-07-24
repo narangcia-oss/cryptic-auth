@@ -131,6 +131,10 @@ impl OAuth2Manager {
         })?;
 
         debug!("OAuth2 client configured for provider: {provider:?}");
+        debug!("Client ID: {}", config.client_id);
+        debug!("Redirect URI: {}", config.redirect_uri);
+        debug!("Auth URL: {}", config.auth_url(provider));
+        debug!("Token URL: {}", config.token_url(provider));
         let client = BasicClient::new(ClientId::new(config.client_id.clone()))
             .set_client_secret(ClientSecret::new(config.client_secret.clone()))
             .set_auth_uri(auth_url)
@@ -360,6 +364,7 @@ impl OAuth2Service for OAuth2Manager {
             .await
             .map_err(|e| {
                 debug!("Token exchange failed for provider {provider:?}: {e}");
+                debug!("Full error details: {e:?}");
                 AuthError::OAuthTokenExchange(format!("Token exchange failed: {e}"))
             })?;
 
