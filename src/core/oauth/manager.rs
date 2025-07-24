@@ -74,8 +74,6 @@ type ConfiguredBasicClient = oauth2::Client<
 pub struct OAuth2Manager {
     /// Map of OAuth2 providers to their configuration.
     configs: HashMap<OAuth2Provider, OAuth2Config>,
-    /// HTTP client used for making requests to provider endpoints.
-    http_client: Client,
 }
 
 impl OAuth2Manager {
@@ -93,10 +91,28 @@ impl OAuth2Manager {
             "Initializing OAuth2Manager with {} provider configs",
             configs.len()
         );
-        Self {
-            configs,
-            http_client: Client::new(),
-        }
+
+        Self { configs }
+    }
+
+    /// Returns a configured HTTP client for the given provider with appropriate User-Agent.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider to get the HTTP client for.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing.
+    fn get_http_client(&self, provider: OAuth2Provider) -> Result<Client, AuthError> {
+        let config = self.configs.get(&provider).ok_or_else(|| {
+            AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
+        })?;
+
+        Client::builder()
+            .user_agent(&config.app_name)
+            .build()
+            .map_err(|e| AuthError::ConfigError(format!("Failed to create HTTP client: {e}")))
     }
 
     /// Returns a configured OAuth2 client for the given provider.
@@ -115,6 +131,8 @@ impl OAuth2Manager {
             AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
         })?;
 
+        let app_name = &config.app_name;
+
         let auth_url = AuthUrl::new(config.auth_url(provider).to_string()).map_err(|e| {
             debug!("Invalid auth URL for provider {provider:?}: {e}");
             AuthError::ConfigError(format!("Invalid auth URL: {e}"))
@@ -131,6 +149,7 @@ impl OAuth2Manager {
         })?;
 
         debug!("OAuth2 client configured for provider: {provider:?}");
+        debug!("App Name: {app_name}");
         debug!("Client ID: {}", config.client_id);
         debug!("Redirect URI: {}", config.redirect_uri);
         debug!("Auth URL: {}", config.auth_url(provider));
@@ -357,10 +376,11 @@ impl OAuth2Service for OAuth2Manager {
         info!("Exchanging code for token for provider: {:?}", provider);
         debug!("Authorization code: {}", code);
         let client = self.get_client(provider)?;
+        let http_client = self.get_http_client(provider)?;
 
         let token_result = client
             .exchange_code(AuthorizationCode::new(code.to_string()))
-            .request_async(&reqwest::Client::new())
+            .request_async(&http_client) // Utilise le client HTTP configuré avec le bon User-Agent
             .await
             .map_err(|e| {
                 debug!("Token exchange failed for provider {provider:?}: {e}");
@@ -418,11 +438,12 @@ impl OAuth2Service for OAuth2Manager {
 
         let user_info_url = config.user_info_url(token.provider);
         debug!("User info URL: {}", user_info_url);
+        let http_client = self.get_http_client(token.provider)?;
 
-        let response = self
-            .http_client
+        let response = http_client
             .get(user_info_url)
             .bearer_auth(&token.access_token)
+            .header("Accept", "application/json")
             .send()
             .await
             .map_err(|e| {
@@ -468,6 +489,7 @@ impl OAuth2Service for OAuth2Manager {
         info!("Refreshing token for provider: {:?}", token.provider);
         debug!("Current refresh token: {:?}", token.refresh_token);
         let client = self.get_client(token.provider)?;
+        let http_client = self.get_http_client(token.provider)?;
 
         let refresh_token = token.refresh_token.as_ref().ok_or_else(|| {
             debug!(
@@ -479,7 +501,7 @@ impl OAuth2Service for OAuth2Manager {
 
         let token_result = client
             .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
-            .request_async(&reqwest::Client::new())
+            .request_async(&http_client) // Utilise le client HTTP configuré avec le bon User-Agent
             .await
             .map_err(|e| {
                 debug!(
@@ -543,81 +565,6 @@ impl OAuth2Manager {
         oauth_info.user_id = user_id;
         oauth_info
     }
-
-    // / Refreshes the access token using the refresh token for the specified provider.
-    // /
-    // / # Arguments
-    // /
-    // / * `token` - The [`OAuth2Token`] containing the refresh token and provider.
-    // /
-    // / # Returns
-    // /
-    // / Returns a new [`OAuth2Token`] on success, or [`AuthError`] on failure.
-
-    // async fn refresh_token(&self, token: &OAuth2Token) -> Result<OAuth2Token, AuthError> {
-    //     info!(
-    //         "Refreshing token for provider: {:?} (duplicate impl)",
-    //         token.provider
-    //     );
-    //     debug!("Current refresh token: {:?}", token.refresh_token);
-    //     let client = self.get_client(token.provider)?;
-
-    //     let refresh_token = token.refresh_token.as_ref().ok_or_else(|| {
-    //         debug!(
-    //             "No refresh token available for provider: {:?}",
-    //             token.provider
-    //         );
-    //         AuthError::OAuthTokenExchange("No refresh token available".to_string())
-    //     })?;
-
-    //     let token_result = client
-    //         .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
-    //         .request_async(&reqwest::Client::new())
-    //         .await
-    //         .map_err(|e| {
-    //             debug!(
-    //                 "Token refresh failed for provider {:?}: {}",
-    //                 token.provider, e
-    //             );
-    //             AuthError::OAuthTokenExchange(format!("Token refresh failed: {e}"))
-    //         })?;
-
-    //     let access_token = token_result.access_token().secret().clone();
-    //     let new_refresh_token = token_result
-    //         .refresh_token()
-    //         .map(|rt| rt.secret().clone())
-    //         .or_else(|| token.refresh_token.clone());
-    //     let expires_at = token_result.expires_in().map(|duration| {
-    //         chrono::Utc::now().naive_utc()
-    //             + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
-    //     });
-    //     let token_type = token_result.token_type().as_ref().to_string();
-    //     let scope = token_result
-    //         .scopes()
-    //         .map(|scopes| {
-    //             scopes
-    //                 .iter()
-    //                 .map(|s| s.to_string())
-    //                 .collect::<Vec<_>>()
-    //                 .join(" ")
-    //         })
-    //         .or_else(|| token.scope.clone());
-
-    //     info!(
-    //         "Token refresh successful for provider: {:?}",
-    //         token.provider
-    //     );
-    //     debug!("New access token: {access_token}");
-    //     Ok(OAuth2Token {
-    //         access_token,
-    //         refresh_token: new_refresh_token,
-    //         expires_at,
-    //         token_type,
-    //         scope,
-    //         provider: token.provider,
-    //         created_at: chrono::Utc::now().naive_utc(),
-    //     })
-    // }
 }
 
 /// Provides a default empty [`OAuth2Manager`] with no provider configurations.

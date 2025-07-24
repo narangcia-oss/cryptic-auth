@@ -115,6 +115,8 @@ pub struct OAuth2UserInfo {
 /// Configuration for OAuth2 authentication with a provider.
 #[derive(Debug, Clone)]
 pub struct OAuth2Config {
+    /// The name of the application using OAuth2.
+    pub app_name: String,
     /// The OAuth2 client ID.
     pub client_id: String,
     /// The OAuth2 client secret.
