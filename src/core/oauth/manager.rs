@@ -544,79 +544,80 @@ impl OAuth2Manager {
         oauth_info
     }
 
-    /// Refreshes the access token using the refresh token for the specified provider.
-    ///
-    /// # Arguments
-    ///
-    /// * `token` - The [`OAuth2Token`] containing the refresh token and provider.
-    ///
-    /// # Returns
-    ///
-    /// Returns a new [`OAuth2Token`] on success, or [`AuthError`] on failure.
-    async fn refresh_token(&self, token: &OAuth2Token) -> Result<OAuth2Token, AuthError> {
-        info!(
-            "Refreshing token for provider: {:?} (duplicate impl)",
-            token.provider
-        );
-        debug!("Current refresh token: {:?}", token.refresh_token);
-        let client = self.get_client(token.provider)?;
+    // / Refreshes the access token using the refresh token for the specified provider.
+    // /
+    // / # Arguments
+    // /
+    // / * `token` - The [`OAuth2Token`] containing the refresh token and provider.
+    // /
+    // / # Returns
+    // /
+    // / Returns a new [`OAuth2Token`] on success, or [`AuthError`] on failure.
 
-        let refresh_token = token.refresh_token.as_ref().ok_or_else(|| {
-            debug!(
-                "No refresh token available for provider: {:?}",
-                token.provider
-            );
-            AuthError::OAuthTokenExchange("No refresh token available".to_string())
-        })?;
+    // async fn refresh_token(&self, token: &OAuth2Token) -> Result<OAuth2Token, AuthError> {
+    //     info!(
+    //         "Refreshing token for provider: {:?} (duplicate impl)",
+    //         token.provider
+    //     );
+    //     debug!("Current refresh token: {:?}", token.refresh_token);
+    //     let client = self.get_client(token.provider)?;
 
-        let token_result = client
-            .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
-            .request_async(&reqwest::Client::new())
-            .await
-            .map_err(|e| {
-                debug!(
-                    "Token refresh failed for provider {:?}: {}",
-                    token.provider, e
-                );
-                AuthError::OAuthTokenExchange(format!("Token refresh failed: {e}"))
-            })?;
+    //     let refresh_token = token.refresh_token.as_ref().ok_or_else(|| {
+    //         debug!(
+    //             "No refresh token available for provider: {:?}",
+    //             token.provider
+    //         );
+    //         AuthError::OAuthTokenExchange("No refresh token available".to_string())
+    //     })?;
 
-        let access_token = token_result.access_token().secret().clone();
-        let new_refresh_token = token_result
-            .refresh_token()
-            .map(|rt| rt.secret().clone())
-            .or_else(|| token.refresh_token.clone());
-        let expires_at = token_result.expires_in().map(|duration| {
-            chrono::Utc::now().naive_utc()
-                + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
-        });
-        let token_type = token_result.token_type().as_ref().to_string();
-        let scope = token_result
-            .scopes()
-            .map(|scopes| {
-                scopes
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .or_else(|| token.scope.clone());
+    //     let token_result = client
+    //         .exchange_refresh_token(&RefreshToken::new(refresh_token.clone()))
+    //         .request_async(&reqwest::Client::new())
+    //         .await
+    //         .map_err(|e| {
+    //             debug!(
+    //                 "Token refresh failed for provider {:?}: {}",
+    //                 token.provider, e
+    //             );
+    //             AuthError::OAuthTokenExchange(format!("Token refresh failed: {e}"))
+    //         })?;
 
-        info!(
-            "Token refresh successful for provider: {:?}",
-            token.provider
-        );
-        debug!("New access token: {access_token}");
-        Ok(OAuth2Token {
-            access_token,
-            refresh_token: new_refresh_token,
-            expires_at,
-            token_type,
-            scope,
-            provider: token.provider,
-            created_at: chrono::Utc::now().naive_utc(),
-        })
-    }
+    //     let access_token = token_result.access_token().secret().clone();
+    //     let new_refresh_token = token_result
+    //         .refresh_token()
+    //         .map(|rt| rt.secret().clone())
+    //         .or_else(|| token.refresh_token.clone());
+    //     let expires_at = token_result.expires_in().map(|duration| {
+    //         chrono::Utc::now().naive_utc()
+    //             + chrono::Duration::from_std(duration).unwrap_or(chrono::Duration::seconds(0))
+    //     });
+    //     let token_type = token_result.token_type().as_ref().to_string();
+    //     let scope = token_result
+    //         .scopes()
+    //         .map(|scopes| {
+    //             scopes
+    //                 .iter()
+    //                 .map(|s| s.to_string())
+    //                 .collect::<Vec<_>>()
+    //                 .join(" ")
+    //         })
+    //         .or_else(|| token.scope.clone());
+
+    //     info!(
+    //         "Token refresh successful for provider: {:?}",
+    //         token.provider
+    //     );
+    //     debug!("New access token: {access_token}");
+    //     Ok(OAuth2Token {
+    //         access_token,
+    //         refresh_token: new_refresh_token,
+    //         expires_at,
+    //         token_type,
+    //         scope,
+    //         provider: token.provider,
+    //         created_at: chrono::Utc::now().naive_utc(),
+    //     })
+    // }
 }
 
 /// Provides a default empty [`OAuth2Manager`] with no provider configurations.
