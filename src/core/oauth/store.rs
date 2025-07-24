@@ -2,6 +2,56 @@
 //!
 //! This module defines enums and structs for representing OAuth2 providers, tokens, user information,
 //! configuration, and session state. It also provides utility methods for working with these types.
+//!
+//! # OAuth2 Flow with Frontend Redirect
+//!
+//! The OAuth2 implementation supports automatic redirection to frontend applications after successful
+//! authentication. Here's how the flow works:
+//!
+//! 1. **Generate Auth URL**: Client requests authorization URL from `/oauth/{provider}/auth`
+//! 2. **User Authorization**: User is redirected to provider (Google, GitHub, etc.) for authorization
+//! 3. **Provider Callback**: Provider redirects back to `/oauth/{provider}/callback` with auth code
+//! 4. **Token Exchange**: Server exchanges code for tokens automatically
+//! 5. **Frontend Redirect**: Server redirects user to `redirect_frontend_uri` with tokens in URL fragment
+//!
+//! ## Example Configuration
+//!
+//! ```rust
+//! use cryptic::core::oauth::store::OAuth2Config;
+//!
+//! let config = OAuth2Config {
+//!     app_name: "My App".to_string(),
+//!     client_id: "your-client-id".to_string(),
+//!     client_secret: "your-client-secret".to_string(),
+//!     redirect_uri: "https://api.myapp.com/oauth/google/callback".to_string(),
+//!     redirect_frontend_uri: "https://myapp.com/auth/callback".to_string(),
+//!     additional_scopes: vec!["profile".to_string()],
+//! };
+//! ```
+//!
+//! ## Frontend Token Extraction
+//!
+//! Your frontend application should handle the redirect and extract tokens from the URL fragment:
+//!
+//! ```javascript
+//! // At your redirect_frontend_uri (e.g., https://myapp.com/auth/callback)
+//! function handleOAuthCallback() {
+//!   const fragment = window.location.hash.substring(1);
+//!   const params = new URLSearchParams(fragment);
+//!
+//!   if (params.has('error')) {
+//!     console.error('OAuth error:', params.get('error'));
+//!   } else {
+//!     const accessToken = params.get('access_token');
+//!     const refreshToken = params.get('refresh_token');
+//!     const userId = params.get('user_id');
+//!
+//!     // Store tokens and proceed
+//!     localStorage.setItem('accessToken', accessToken);
+//!     // ... redirect to your app
+//!   }
+//! }
+//! ```
 
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
@@ -122,8 +172,13 @@ pub struct OAuth2Config {
     /// The OAuth2 client secret.
     pub client_secret: String,
     /// The redirect URI for OAuth2 callbacks.
+    /// This is where the OAuth2 provider will redirect users after authorization.
+    /// It should point to your server's callback endpoint (e.g., `/oauth/{provider}/callback`).
     pub redirect_uri: String,
     /// The redirect URI for the user to go back to the frontend application.
+    /// After successful OAuth2 authentication, the server will redirect the user to this URI
+    /// with authentication tokens included in the URL fragment (e.g., `#access_token=...&refresh_token=...`).
+    /// This should point to a frontend page that can handle token extraction from the URL fragment.
     pub redirect_frontend_uri: String,
     /// Additional scopes to request during authentication.
     pub additional_scopes: Vec<String>,

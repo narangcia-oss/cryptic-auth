@@ -547,9 +547,32 @@ impl OAuth2Service for OAuth2Manager {
             created_at: chrono::Utc::now().naive_utc(),
         })
     }
+
+    async fn get_redirect_frontend_uri(
+        &self,
+        provider: OAuth2Provider,
+    ) -> Result<String, AuthError> {
+        self.get_redirect_frontend_uri(provider)
+    }
 }
 
 impl OAuth2Manager {
+    /// Gets the redirect_frontend_uri for the given provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider to get the redirect_frontend_uri for.
+    ///
+    /// # Returns
+    ///
+    /// Returns the redirect_frontend_uri as a string, or an [`AuthError`] if the provider configuration is missing.
+    pub fn get_redirect_frontend_uri(&self, provider: OAuth2Provider) -> Result<String, AuthError> {
+        let config = self.configs.get(&provider).ok_or_else(|| {
+            AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
+        })?;
+        Ok(config.redirect_frontend_uri.clone())
+    }
+
     /// Sets the user_id field in OAuth2UserInfo to link it to a cryptic user.
     ///
     /// # Arguments

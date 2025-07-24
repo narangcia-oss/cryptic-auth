@@ -108,6 +108,24 @@ pub trait OAuth2Service {
         &self,
         token: &store::OAuth2Token,
     ) -> Result<store::OAuth2Token, crate::AuthError>;
+
+    /// Gets the redirect_frontend_uri for the given OAuth2 provider.
+    ///
+    /// This method returns the frontend redirect URI that should be used to redirect
+    /// users back to the frontend application after OAuth2 completion.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The OAuth2 provider to get the redirect_frontend_uri for.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The redirect_frontend_uri as configured for the provider.
+    /// * `Err(AuthError)` - If the provider configuration is missing or invalid.
+    async fn get_redirect_frontend_uri(
+        &self,
+        provider: store::OAuth2Provider,
+    ) -> Result<String, crate::AuthError>;
 }
 
 /// OAuth2 manager module: contains logic for managing provider-specific operations.

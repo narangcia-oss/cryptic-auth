@@ -135,15 +135,24 @@
 //!
 //! ### GET `/oauth/{provider}/callback`
 //! OAuth2 callback endpoint (usually called by the provider after user authorization).
+//! This endpoint automatically redirects users to the configured frontend URI with tokens
+//! included in the URL fragment for security.
 //!
 //! **Query Parameters:**
 //! - `code` (required): Authorization code from provider
 //! - `state` (required): State parameter for CSRF verification
 //!
-//! **Example:**
+//! **Example Request:**
 //! ```
 //! GET /oauth/google/callback?code=auth-code-from-provider&state=random-csrf-token
 //! ```
+//!
+//! **Success Response:**
+//! HTTP 302 Redirect to `{redirect_frontend_uri}#access_token=...&refresh_token=...&user_id=...&token_type=Bearer&expires_in=3600`
+//!
+//! **Error Response:**
+//! HTTP 302 Redirect to `{redirect_frontend_uri}#error=authentication_failed&error_description=...`
+//!
 //!
 //! ### POST `/oauth/signup`
 //! Create a new user account using OAuth2 authorization code.
@@ -256,27 +265,35 @@
 //! // 2. Redirect user to authorization URL
 //! window.location.href = authorization_url;
 //!
-//! // 3. Handle callback (in your redirect URI handler)
-//! const urlParams = new URLSearchParams(window.location.search);
-//! const code = urlParams.get('code');
-//! const returnedState = urlParams.get('state');
+//! // 3. Handle callback automatically via redirect
+//! // The OAuth2 callback endpoint will automatically redirect the user back to your
+//! // frontend application with tokens in the URL fragment. Your frontend should
+//! // handle this redirect and extract tokens from the URL fragment:
 //!
-//! // Verify state matches what you sent
-//! if (returnedState !== state) {
-//!   throw new Error('State mismatch - possible CSRF attack');
+//! // Example frontend redirect handler (e.g., at your redirect_frontend_uri)
+//! function handleOAuthCallback() {
+//!   const fragment = window.location.hash.substring(1); // Remove the '#'
+//!   const params = new URLSearchParams(fragment);
+//!
+//!   if (params.has('error')) {
+//!     const error = params.get('error');
+//!     const errorDescription = params.get('error_description');
+//!     console.error('OAuth error:', error, errorDescription);
+//!     // Handle error
+//!   } else {
+//!     const accessToken = params.get('access_token');
+//!     const refreshToken = params.get('refresh_token');
+//!     const userId = params.get('user_id');
+//!
+//!     // Store tokens and proceed with authentication
+//!     localStorage.setItem('accessToken', accessToken);
+//!     localStorage.setItem('refreshToken', refreshToken);
+//!     localStorage.setItem('userId', userId);
+//!
+//!     // Redirect to your app's main page or show success
+//!     window.location.href = '/dashboard';
+//!   }
 //! }
-//!
-//! // 4. Complete OAuth signup/login
-//! const oauthResponse = await fetch('http://localhost:3000/oauth/signup', {
-//!   method: 'POST',
-//!   headers: { 'Content-Type': 'application/json' },
-//!   body: JSON.stringify({
-//!     provider: 'google',
-//!     code,
-//!     state: returnedState
-//!   })
-//! });
-//! const { access_token, refresh_token, oauth_info } = await oauthResponse.json();
 //! ```
 //!
 //! ## cURL Examples
@@ -345,6 +362,18 @@ use axum::{
 };
 use serde::Deserialize;
 use std::sync::Arc;
+
+/// Simple URL encoding function for OAuth2 callback parameters
+fn url_encode(s: &str) -> String {
+    s.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
 
 #[cfg(feature = "axum")]
 /// Starts the Axum web server with all authentication routes.
@@ -784,15 +813,16 @@ async fn oauth_auth_handler(
 /// HTTP handler for the `/oauth/{provider}/callback` endpoint.
 ///
 /// Handles OAuth2 callback from providers. This endpoint would typically be called
-/// by the OAuth2 provider after user authorization. Returns user info and tokens.
+/// by the OAuth2 provider after user authorization. Redirects user to the frontend
+/// application with tokens included in the URL fragment.
 ///
 /// # Query Parameters
 /// - `code`: The authorization code from the provider
 /// - `state`: The state parameter for CSRF verification
 ///
-/// # Response JSON
-/// - Success: `{ "id": "...", "access_token": "...", "refresh_token": "..." }`
-/// - Error: `{ "error": "..." }`
+/// # Response
+/// - Success: HTTP 302 redirect to frontend URI with tokens in URL fragment
+/// - Error: JSON error response
 async fn oauth_callback_handler(
     State(_auth): State<Arc<AuthService>>,
     Path(provider_str): Path<String>,
@@ -846,6 +876,22 @@ async fn oauth_callback_handler(
         }
     };
 
+    // Get the frontend redirect URI for this provider
+    let frontend_uri = match _auth.get_oauth2_redirect_frontend_uri(provider).await {
+        Ok(uri) => uri,
+        Err(e) => {
+            log::error!("Failed to get frontend redirect URI: {e}");
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                serde_json::json!({
+                    "error": format!("Configuration error: {e}")
+                })
+                .to_string(),
+            )
+                .into_response();
+        }
+    };
+
     // Use the login method with OAuth2
     match _auth
         .login(crate::auth_service::LoginMethod::OAuth2 {
@@ -860,24 +906,34 @@ async fn oauth_callback_handler(
                 "OAuth2 callback login successful for user_id: {id}",
                 id = user.id
             );
-            serde_json::json!({
-                "id": user.id,
-                "access_token": tokens.access_token,
-                "refresh_token": tokens.refresh_token
-            })
-            .to_string()
-            .into_response()
+
+            // Build the redirect URL with tokens in the fragment
+            let redirect_url = format!(
+                "{}#access_token={}&refresh_token={}&user_id={}&token_type=Bearer&expires_in=3600",
+                frontend_uri,
+                url_encode(&tokens.access_token),
+                url_encode(&tokens.refresh_token),
+                url_encode(&user.id)
+            );
+
+            log::info!("Redirecting user to frontend: {redirect_url}");
+
+            // Return HTTP 302 redirect
+            axum::response::Redirect::permanent(&redirect_url).into_response()
         }
         Err(e) => {
             log::error!("OAuth2 callback login failed: {e}");
-            (
-                axum::http::StatusCode::BAD_REQUEST,
-                serde_json::json!({
-                    "error": e.to_string()
-                })
-                .to_string(),
-            )
-                .into_response()
+
+            // Redirect to frontend with error
+            let error_redirect_url = format!(
+                "{}#error={}&error_description={}",
+                frontend_uri,
+                url_encode("authentication_failed"),
+                url_encode(&e.to_string())
+            );
+
+            log::info!("Redirecting user to frontend with error: {error_redirect_url}");
+            axum::response::Redirect::permanent(&error_redirect_url).into_response()
         }
     }
 }

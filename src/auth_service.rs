@@ -609,4 +609,23 @@ impl AuthService {
 
         Ok(user.oauth_accounts.keys().copied().collect())
     }
+
+    /// Gets the redirect_frontend_uri for the given OAuth2 provider.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider to get the redirect_frontend_uri for.
+    ///
+    /// # Returns
+    /// Returns the redirect_frontend_uri as a string, or an [`AuthError`] if the provider configuration is missing.
+    pub async fn get_oauth2_redirect_frontend_uri(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+    ) -> Result<String, AuthError> {
+        // Since oauth2_manager is a Box<dyn OAuth2Service>, we need to downcast it to OAuth2Manager
+        // to access the get_redirect_frontend_uri method. For now, we'll need to modify the trait.
+        // Let's assume we add this method to the OAuth2Service trait.
+        self.oauth2_manager
+            .get_redirect_frontend_uri(provider)
+            .await
+    }
 }
