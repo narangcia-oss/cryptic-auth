@@ -111,9 +111,9 @@ impl OAuth2Manager {
     pub fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         debug!("Getting OAuth2 client for provider: {provider:?}");
         let config = self.configs.get(&provider).ok_or_else(|| {
-                            debug!("No config found for provider: {provider:?}");
-                            AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
-                        })?;
+            debug!("No config found for provider: {provider:?}");
+            AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
+        })?;
 
         let auth_url = AuthUrl::new(config.auth_url(provider).to_string()).map_err(|e| {
             debug!("Invalid auth URL for provider {provider:?}: {e}");
