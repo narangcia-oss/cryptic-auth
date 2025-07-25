@@ -50,19 +50,21 @@
 <a href=#50 id=50 data-nosnippet>50</a><span class="doccomment">/// PostgreSQL backend (requires `postgres` feature).
 <a href=#51 id=51 data-nosnippet>51</a></span><span class="attr">#[cfg(feature = <span class="string">"postgres"</span>)]
 <a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">pub mod </span>postgres;
-<a href=#53 id=53 data-nosnippet>53</a><span class="doccomment">/// Axum web integration (requires `web` feature).
-<a href=#54 id=54 data-nosnippet>54</a></span><span class="attr">#[cfg(feature = <span class="string">"web"</span>)]
+<a href=#53 id=53 data-nosnippet>53</a><span class="doccomment">/// Axum web integration (requires `axum` feature).
+<a href=#54 id=54 data-nosnippet>54</a></span><span class="attr">#[cfg(feature = <span class="string">"axum"</span>)]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub mod </span>web_axum;
 <a href=#56 id=56 data-nosnippet>56</a>
 <a href=#57 id=57 data-nosnippet>57</a><span class="doccomment">/// Main authentication service.
 <a href=#58 id=58 data-nosnippet>58</a></span><span class="kw">pub use </span>auth_service::AuthService;
-<a href=#59 id=59 data-nosnippet>59</a><span class="doccomment">/// User type.
-<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub use </span>core::user::User <span class="kw">as </span>CrypticUser;
-<a href=#61 id=61 data-nosnippet>61</a><span class="doccomment">/// Error type for authentication operations.
-<a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">pub use </span>error::AuthError;
-<a href=#63 id=63 data-nosnippet>63</a><span class="doccomment">/// Returns an Axum router with authentication endpoints (with `web` feature).
-<a href=#64 id=64 data-nosnippet>64</a></span><span class="attr">#[cfg(feature = <span class="string">"web"</span>)]
-<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub use </span>web_axum::get_cryptic_axum_router;
-<a href=#66 id=66 data-nosnippet>66</a><span class="doccomment">/// Starts the Axum web server (with `web` feature).
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="attr">#[cfg(feature = <span class="string">"web"</span>)]
-<a href=#68 id=68 data-nosnippet>68</a></span><span class="kw">pub use </span>web_axum::start_server;</code></pre></div></section></main></body></html>
+<a href=#59 id=59 data-nosnippet>59</a><span class="doccomment">/// Authentication method enums for unified login and signup.
+<a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">pub use </span>auth_service::{LoginMethod, SignupMethod};
+<a href=#61 id=61 data-nosnippet>61</a><span class="doccomment">/// User type.
+<a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">pub use </span>core::user::User <span class="kw">as </span>CrypticUser;
+<a href=#63 id=63 data-nosnippet>63</a><span class="doccomment">/// Error type for authentication operations.
+<a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">pub use </span>error::AuthError;
+<a href=#65 id=65 data-nosnippet>65</a><span class="doccomment">/// Returns an Axum router with authentication endpoints (with `axum` feature).
+<a href=#66 id=66 data-nosnippet>66</a></span><span class="attr">#[cfg(feature = <span class="string">"axum"</span>)]
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub use </span>web_axum::get_cryptic_axum_router;
+<a href=#68 id=68 data-nosnippet>68</a><span class="doccomment">/// Starts the Axum web server (with `axum` feature).
+<a href=#69 id=69 data-nosnippet>69</a></span><span class="attr">#[cfg(feature = <span class="string">"axum"</span>)]
+<a href=#70 id=70 data-nosnippet>70</a></span><span class="kw">pub use </span>web_axum::start_server;</code></pre></div></section></main></body></html>

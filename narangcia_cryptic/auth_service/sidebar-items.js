@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AuthService"]};
+window.SIDEBAR_ITEMS = {"enum":["LoginMethod","SignupMethod"],"struct":["AuthService"]};

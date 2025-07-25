@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["credentials","hash","password","policy","token","user","vars"]};
+window.SIDEBAR_ITEMS = {"mod":["credentials","hash","oauth","password","policy","token","user","vars"]};

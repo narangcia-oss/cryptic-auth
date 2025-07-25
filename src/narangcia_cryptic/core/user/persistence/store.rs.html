@@ -122,7 +122,7 @@
 <a href=#122 id=122 data-nosnippet>122</a>    /// # Returns
 <a href=#123 id=123 data-nosnippet>123</a>    ///
 <a href=#124 id=124 data-nosnippet>124</a>    /// `Ok(())` if the update was successful, or an `AuthError` otherwise.
-<a href=#125 id=125 data-nosnippet>125</a>    </span><span class="kw">async fn </span>update_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user: User) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::error::AuthError&gt; {
+<a href=#125 id=125 data-nosnippet>125</a>    </span><span class="kw">async fn </span>update_user(<span class="kw-2">&amp;</span><span class="self">self</span>, user: <span class="kw-2">&amp;</span>User) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::error::AuthError&gt; {
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#127 id=127 data-nosnippet>127</a>            PersistentUsers::InMemory(repo) =&gt; repo.update_user(user).<span class="kw">await</span>,
 <a href=#128 id=128 data-nosnippet>128</a>            <span class="attr">#[cfg(feature = <span class="string">"postgres"</span>)]
@@ -147,4 +147,31 @@
 <a href=#147 id=147 data-nosnippet>147</a>            </span>PersistentUsers::PostgresDatabase(repo) =&gt; repo.delete_user(id).<span class="kw">await</span>,
 <a href=#148 id=148 data-nosnippet>148</a>        }
 <a href=#149 id=149 data-nosnippet>149</a>    }
-<a href=#150 id=150 data-nosnippet>150</a>}</code></pre></div></section></main></body></html>
+<a href=#150 id=150 data-nosnippet>150</a>
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Retrieves a user by their OAuth provider and provider user ID.
+<a href=#152 id=152 data-nosnippet>152</a>    ///
+<a href=#153 id=153 data-nosnippet>153</a>    /// Delegates to the underlying backend implementation.
+<a href=#154 id=154 data-nosnippet>154</a>    ///
+<a href=#155 id=155 data-nosnippet>155</a>    /// # Arguments
+<a href=#156 id=156 data-nosnippet>156</a>    /// * `provider` - The OAuth2 provider.
+<a href=#157 id=157 data-nosnippet>157</a>    /// * `provider_user_id` - The user ID from the OAuth provider.
+<a href=#158 id=158 data-nosnippet>158</a>    ///
+<a href=#159 id=159 data-nosnippet>159</a>    /// # Returns
+<a href=#160 id=160 data-nosnippet>160</a>    ///
+<a href=#161 id=161 data-nosnippet>161</a>    /// `Some(User)` if found, or `None` if no user with the given OAuth credentials exists.
+<a href=#162 id=162 data-nosnippet>162</a>    </span><span class="kw">async fn </span>get_user_by_oauth_id(
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#164 id=164 data-nosnippet>164</a>        provider: <span class="kw">crate</span>::core::oauth::store::OAuth2Provider,
+<a href=#165 id=165 data-nosnippet>165</a>        provider_user_id: <span class="kw-2">&amp;</span>str,
+<a href=#166 id=166 data-nosnippet>166</a>    ) -&gt; <span class="prelude-ty">Option</span>&lt;User&gt; {
+<a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">match </span><span class="self">self </span>{
+<a href=#168 id=168 data-nosnippet>168</a>            PersistentUsers::InMemory(repo) =&gt; {
+<a href=#169 id=169 data-nosnippet>169</a>                repo.get_user_by_oauth_id(provider, provider_user_id).<span class="kw">await
+<a href=#170 id=170 data-nosnippet>170</a>            </span>}
+<a href=#171 id=171 data-nosnippet>171</a>            <span class="attr">#[cfg(feature = <span class="string">"postgres"</span>)]
+<a href=#172 id=172 data-nosnippet>172</a>            </span>PersistentUsers::PostgresDatabase(repo) =&gt; {
+<a href=#173 id=173 data-nosnippet>173</a>                repo.get_user_by_oauth_id(provider, provider_user_id).<span class="kw">await
+<a href=#174 id=174 data-nosnippet>174</a>            </span>}
+<a href=#175 id=175 data-nosnippet>175</a>        }
+<a href=#176 id=176 data-nosnippet>176</a>    }
+<a href=#177 id=177 data-nosnippet>177</a>}</code></pre></div></section></main></body></html>

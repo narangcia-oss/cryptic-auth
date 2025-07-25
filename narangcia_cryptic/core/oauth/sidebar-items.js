@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["manager","store"],"trait":["OAuth2Service"]};
