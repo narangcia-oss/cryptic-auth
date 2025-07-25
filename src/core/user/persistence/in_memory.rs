@@ -76,7 +76,12 @@ impl UserRepository for InMemoryUserRepo {
         let users = self.users.lock().ok()?; // Handle potential poisoning
         users
             .iter()
-            .find(|u| u.credentials.identifier == identifier)
+            .find(|u| {
+                u.credentials
+                    .as_ref()
+                    .map(|creds| creds.identifier == identifier)
+                    .unwrap_or(false)
+            })
             .cloned()
     }
 
@@ -89,13 +94,13 @@ impl UserRepository for InMemoryUserRepo {
     /// * `Ok(())` if the user was updated.
     /// * `Err(AuthError::UserNotFound)` if the user does not exist.
     /// * `Err(AuthError)` if the repository is unavailable.
-    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError> {
+    async fn update_user(&self, user: &User) -> Result<(), crate::error::AuthError> {
         let mut users = self
             .users
             .lock()
             .map_err(|e| crate::error::AuthError::ServiceUnavailable(e.to_string()))?;
         if let Some(existing) = users.iter_mut().find(|u| u.id == user.id) {
-            *existing = user;
+            *existing = user.clone();
             Ok(())
         } else {
             Err(crate::error::AuthError::UserNotFound)
@@ -123,5 +128,30 @@ impl UserRepository for InMemoryUserRepo {
         } else {
             Err(crate::error::AuthError::UserNotFound)
         }
+    }
+
+    /// Retrieves a user by their OAuth provider and provider user ID.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider.
+    /// * `provider_user_id` - The user ID from the OAuth provider.
+    ///
+    /// # Returns
+    /// * `Some(User)` if found, or `None` if not found or on lock error.
+    async fn get_user_by_oauth_id(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        provider_user_id: &str,
+    ) -> Option<User> {
+        let users = self.users.lock().ok()?;
+        users
+            .iter()
+            .find(|u| {
+                u.oauth_accounts
+                    .get(&provider)
+                    .map(|oauth_info| oauth_info.provider_user_id == provider_user_id)
+                    .unwrap_or(false)
+            })
+            .cloned()
     }
 }

@@ -90,6 +90,39 @@ pub enum AuthError {
     /// Returned when the token manager component is missing or unavailable.
     #[error("Missing token manager")]
     MissingTokenManager,
+    /// Returned when a network error occurs during OAuth operations.
+    #[error("OAuth network error: {0}")]
+    OAuthNetwork(String),
+
+    /// Returned when an invalid response is received from the OAuth provider.
+    #[error("OAuth invalid response: {0}")]
+    OAuthInvalidResponse(String),
+
+    /// Returned when the OAuth provider returns an error.
+    #[error("OAuth provider error: {0}")]
+    OAuthProvider(String),
+
+    /// Returned when the token exchange process fails during OAuth.
+    #[error("OAuth token exchange failed: {0}")]
+    OAuthTokenExchange(String),
+
+    /// Returned when fetching user info from the OAuth provider fails.
+    #[error("OAuth user info fetch failed: {0}")]
+    OAuthUserInfo(String),
+
+    /// Returned for other errors related to OAuth operations.
+    #[error("OAuth other error: {0}")]
+    OAuthOther(String),
+
+    /// Returned when a user signup operation fails.
+    /// Contains a description of the signup error.
+    #[error("User signup error: {0}")]
+    SignupError(String),
+
+    /// Returned when a user login operation fails.
+    /// Contains a description of the login error.
+    #[error("User login error: {0}")]
+    LoginError(String),
 
     /// Returned when a database error occurs (only available with the `postgres` feature).
     /// Contains a description of the database error.

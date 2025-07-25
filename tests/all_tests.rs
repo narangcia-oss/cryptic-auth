@@ -63,22 +63,18 @@ use narangcia_cryptic::AuthService;
 #[tokio::test]
 /// Tests the `AuthService::signup` method for successful user signup.
 ///
-/// - Creates a user with a plain password.
+/// - Creates a user with credentials.
 /// - Signs up the user and expects success.
 /// - This test ensures the signup logic is implemented and works as expected.
 async fn test_auth_service_signup_not_implemented() {
     let auth_service = AuthService::default();
 
-    let user = narangcia_cryptic::core::user::User::with_plain_password(
-        auth_service.password_manager.as_ref(),
-        "test_user_id".to_string(),
-        "test_user".to_string(),
-        narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
-    )
-    .await
-    .expect("Failed to create user");
-
-    let result = auth_service.signup(user).await;
+    let result = auth_service
+        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+            identifier: "test_user".to_string(),
+            password: "plain_password".to_string(),
+        })
+        .await;
     assert!(result.is_ok());
 }
 
@@ -88,27 +84,23 @@ async fn test_auth_service_signup_not_implemented() {
 /// - Signs up a user.
 /// - Attempts login with correct credentials and expects success.
 async fn test_auth_service_login_success() {
-    // Create a user first
-    let auth_service = narangcia_cryptic::AuthService::default();
-
-    let user = narangcia_cryptic::core::user::User::with_plain_password(
-        auth_service.password_manager.as_ref(),
-        "test_user_id".to_string(),
-        "test_user".to_string(),
-        narangcia_cryptic::core::credentials::PlainPassword::new("plain_password".to_string()),
-    )
-    .await
-    .expect("Failed to create user");
-
     let auth_service = narangcia_cryptic::AuthService::default();
 
     // Sign up the user first
-    let signup_result = auth_service.signup(user).await;
+    let signup_result = auth_service
+        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+            identifier: "test_user".to_string(),
+            password: "plain_password".to_string(),
+        })
+        .await;
     assert!(signup_result.is_ok());
 
     // Now test login with correct credentials
     let login_result = auth_service
-        .login_with_credentials("test_user", "plain_password")
+        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+            identifier: "test_user".to_string(),
+            password: "plain_password".to_string(),
+        })
         .await;
     assert!(login_result.is_ok());
 }
@@ -122,7 +114,10 @@ async fn test_auth_service_login_invalid_credentials() {
     let auth_service = narangcia_cryptic::AuthService::default();
 
     let result = auth_service
-        .login_with_credentials("nonexistent_user", "wrong_password")
+        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+            identifier: "nonexistent_user".to_string(),
+            password: "wrong_password".to_string(),
+        })
         .await;
     assert!(result.is_err());
     assert_eq!(
@@ -244,7 +239,7 @@ async fn test_in_memory_user_repo_add_and_get_user() {
     assert!(fetched.is_some());
     let fetched = fetched.unwrap();
     assert_eq!(fetched.id, "id1");
-    assert_eq!(fetched.credentials.identifier, "user1");
+    assert_eq!(fetched.credentials.as_ref().unwrap().identifier, "user1");
     // By identifier
     let by_identifier = repo.get_user_by_identifier("user1").await;
     assert!(by_identifier.is_some());
@@ -268,11 +263,14 @@ async fn test_in_memory_user_repo_update_user() {
     .expect("Failed to create user");
     repo.add_user(user.clone()).await.expect("Add user failed");
     // Update identifier
-    user.credentials.identifier = "user2_updated".to_string();
-    let update_result = repo.update_user(user.clone()).await;
+    user.credentials.as_mut().unwrap().identifier = "user2_updated".to_string();
+    let update_result = repo.update_user(&user).await;
     assert!(update_result.is_ok());
     let fetched = repo.get_user_by_id("id2").await.unwrap();
-    assert_eq!(fetched.credentials.identifier, "user2_updated");
+    assert_eq!(
+        fetched.credentials.as_ref().unwrap().identifier,
+        "user2_updated"
+    );
 }
 
 #[tokio::test]

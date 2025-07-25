@@ -17,8 +17,8 @@
 use crate::core::token::claims::{AccessTokenClaims, Claims, RefreshTokenClaims};
 use crate::core::token::{TokenPair, TokenService};
 use crate::error::AuthError;
+use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Service for generating, validating, and refreshing JWT access and refresh tokens.
 ///
@@ -61,15 +61,20 @@ impl JwtTokenService {
         }
     }
 
-    /// Returns the current UNIX timestamp in seconds.
+    /// Returns the current UNIX timestamp in seconds using chrono.
     ///
     /// # Errors
-    /// Returns [`AuthError::TokenGeneration`] if the system time is before the UNIX epoch.
+    /// Returns [`AuthError::TokenGeneration`] if the time conversion fails.
     fn current_timestamp() -> Result<usize, AuthError> {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|_| AuthError::TokenGeneration("Failed to get current time".to_string()))
-            .map(|duration| duration.as_secs() as usize)
+        let now = Utc::now().naive_utc();
+        let timestamp = now.and_utc().timestamp();
+        if timestamp < 0 {
+            Err(AuthError::TokenGeneration(
+                "Failed to get current time".to_string(),
+            ))
+        } else {
+            Ok(timestamp as usize)
+        }
     }
 
     /// Generates a signed JWT access token for the given user ID.

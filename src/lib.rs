@@ -50,19 +50,21 @@ pub mod error;
 /// PostgreSQL backend (requires `postgres` feature).
 #[cfg(feature = "postgres")]
 pub mod postgres;
-/// Axum web integration (requires `web` feature).
-#[cfg(feature = "web")]
+/// Axum web integration (requires `axum` feature).
+#[cfg(feature = "axum")]
 pub mod web_axum;
 
 /// Main authentication service.
 pub use auth_service::AuthService;
+/// Authentication method enums for unified login and signup.
+pub use auth_service::{LoginMethod, SignupMethod};
 /// User type.
 pub use core::user::User as CrypticUser;
 /// Error type for authentication operations.
 pub use error::AuthError;
-/// Returns an Axum router with authentication endpoints (with `web` feature).
-#[cfg(feature = "web")]
+/// Returns an Axum router with authentication endpoints (with `axum` feature).
+#[cfg(feature = "axum")]
 pub use web_axum::get_cryptic_axum_router;
-/// Starts the Axum web server (with `web` feature).
-#[cfg(feature = "web")]
+/// Starts the Axum web server (with `axum` feature).
+#[cfg(feature = "axum")]
 pub use web_axum::start_server;

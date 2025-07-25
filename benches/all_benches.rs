@@ -231,8 +231,9 @@ fn bench_in_memory_repo_operations(c: &mut Criterion) {
     group.bench_function("update_user", |b| {
         b.to_async(&rt).iter(|| async {
             let mut user = users[500].clone();
-            user.credentials.identifier = format!("updated_username_{}", black_box(500));
-            let result = repo.update_user(black_box(user)).await;
+            user.credentials.as_mut().unwrap().identifier =
+                format!("updated_username_{}", black_box(500));
+            let result = repo.update_user(black_box(&user)).await;
             black_box(result)
         })
     });
@@ -250,16 +251,13 @@ fn bench_auth_service_signup(c: &mut Criterion) {
         b.to_async(&rt).iter(|| async move {
             let auth_service = AuthService::default();
             let uuid = uuid::Uuid::new_v4().to_string();
-            let user = User::with_plain_password(
-                auth_service.password_manager.as_ref(),
-                format!("bench_signup_user_{uuid}"),
-                format!("bench_signup_username_{uuid}"),
-                PlainPassword::new(format!("bench_signup_password_{uuid}")),
-            )
-            .await
-            .unwrap();
 
-            let result = auth_service.signup(black_box(user)).await;
+            let result = auth_service
+                .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+                    identifier: format!("bench_signup_username_{uuid}"),
+                    password: format!("bench_signup_password_{uuid}"),
+                })
+                .await;
             black_box(result)
         })
     });
@@ -273,25 +271,22 @@ fn bench_auth_service_login(c: &mut Criterion) {
 
     // Pre-populate with a user for login benchmarks
     rt.block_on(async {
-        let user = User::with_plain_password(
-            auth_service.password_manager.as_ref(),
-            "bench_login_user_id".to_string(),
-            "bench_login_user".to_string(),
-            PlainPassword::new("bench_login_password".to_string()),
-        )
-        .await
-        .unwrap();
-
-        auth_service.signup(user).await.unwrap();
+        auth_service
+            .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+                identifier: "bench_login_user".to_string(),
+                password: "bench_login_password".to_string(),
+            })
+            .await
+            .unwrap();
     });
 
     c.bench_function("auth_service_login_success", |b| {
         b.to_async(&rt).iter(|| async {
             let result = auth_service
-                .login_with_credentials(
-                    black_box("bench_login_user"),
-                    black_box("bench_login_password"),
-                )
+                .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+                    identifier: black_box("bench_login_user".to_string()),
+                    password: black_box("bench_login_password".to_string()),
+                })
                 .await;
             black_box(result)
         })
@@ -300,7 +295,10 @@ fn bench_auth_service_login(c: &mut Criterion) {
     c.bench_function("auth_service_login_failure", |b| {
         b.to_async(&rt).iter(|| async {
             let result = auth_service
-                .login_with_credentials(black_box("nonexistent_user"), black_box("wrong_password"))
+                .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+                    identifier: black_box("nonexistent_user".to_string()),
+                    password: black_box("wrong_password".to_string()),
+                })
                 .await;
             black_box(result)
         })

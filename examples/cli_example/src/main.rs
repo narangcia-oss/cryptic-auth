@@ -225,17 +225,21 @@ async fn signup_user(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("🔐 Creating new user account...");
 
-    let user = User::with_plain_password(
-        auth_service.password_manager.as_ref(),
-        uuid::Uuid::new_v4().to_string(),
-        username.to_string(),
-        PlainPassword::new(password.to_string()),
-    )
-    .await?;
-
-    match auth_service.signup(user).await {
-        Ok(_) => {
-            println!("✅ User '{}' successfully registered!", username);
+    match auth_service
+        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+            identifier: username.to_string(),
+            password: password.to_string(),
+        })
+        .await
+    {
+        Ok((user, _tokens)) => {
+            println!(
+                "✅ User '{}' successfully registered!",
+                user.credentials
+                    .as_ref()
+                    .map(|c| &c.identifier)
+                    .unwrap_or(&user.id)
+            );
         }
         Err(e) => {
             eprintln!("❌ Signup failed: {}", e);
@@ -262,7 +266,10 @@ async fn login_user(
     println!("🔑 Attempting to log in...");
 
     match auth_service
-        .login_with_credentials_and_tokens(username, password)
+        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+            identifier: username.to_string(),
+            password: password.to_string(),
+        })
         .await
     {
         Ok((user, tokens)) => {

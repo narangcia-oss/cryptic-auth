@@ -47,7 +47,7 @@ pub trait UserRepository: Send + Sync {
     /// # Returns
     /// * `Ok(())` - If the update was successful.
     /// * `Err(AuthError)` - If the update failed (e.g., user not found, DB error).
-    async fn update_user(&self, user: User) -> Result<(), crate::error::AuthError>;
+    async fn update_user(&self, user: &User) -> Result<(), crate::error::AuthError>;
 
     /// Deletes a user from the repository by their id.
     ///
@@ -58,4 +58,19 @@ pub trait UserRepository: Send + Sync {
     /// * `Ok(())` - If the user was successfully deleted.
     /// * `Err(AuthError)` - If the deletion failed (e.g., user not found, DB error).
     async fn delete_user(&self, id: &str) -> Result<(), crate::error::AuthError>;
+
+    /// Retrieves a user by their OAuth provider and provider user ID.
+    ///
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider.
+    /// * `provider_user_id` - The user ID from the OAuth provider.
+    ///
+    /// # Returns
+    /// * `Some(User)` - The user if found.
+    /// * `None` - If no user exists with the given OAuth credentials.
+    async fn get_user_by_oauth_id(
+        &self,
+        provider: crate::core::oauth::store::OAuth2Provider,
+        provider_user_id: &str,
+    ) -> Option<User>;
 }

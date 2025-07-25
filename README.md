@@ -4,6 +4,9 @@ A robust and secure Rust crate for authentication, meticulously designed to prov
 
 ## Features
 
+* **Modular Design**: Offers a high-level interface with a modular architecture, allowing for easy integration and customization.
+* **User Management**: Provides user registration, login, and management functionalities.
+* **OAuth2 Support**: Includes OAuth2 support for third-party authentication.
 * **Secure Password Hashing**: Utilizes modern algorithms like Argon2.
 * **Session/Token Management**: Supports JSON Web Tokens (JWT) with access and refresh tokens.
 * **Robust and Secure Error Handling**.
@@ -17,7 +20,7 @@ Add this line to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-narangcia-cryptic = { version = "0.2.1", features = ["full"] }
+narangcia-cryptic = { version = "0.3.0", features = ["full"] }
 ```
 
 ## Development

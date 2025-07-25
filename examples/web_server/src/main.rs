@@ -11,7 +11,7 @@
 //! To run the example, use the following command:
 //!
 //! ```bash
-//! cargo run --example web_server --features web
+//! cargo run --manifest-path examples/web_server/Cargo.toml
 //! ```
 //!
 //! The server will start and listen on `http://0.0.0.0:3000`.
@@ -110,7 +110,7 @@
 //! async fn main() {
 //!     env_logger::init();
 //!     let auth_service = Arc::new(AuthService::default());
-//!     #[cfg(feature = "web")]
+//!     #[cfg(feature = "axum")]
 //!     start_server(auth_service).await;
 //!     #[cfg(not(feature = "web"))]
 //!     println!("Please enable the 'web' feature to run the web server example.");
@@ -142,8 +142,5 @@ async fn main() {
     env_logger::init();
 
     let auth_service = Arc::new(AuthService::default());
-    #[cfg(feature = "web")]
-    start_server(auth_service).await;
-    #[cfg(not(feature = "web"))]
-    println!("Please enable the 'web' feature to run the web server example.");
+    start_server(auth_service, None).await;
 }
