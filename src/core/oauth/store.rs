@@ -59,6 +59,7 @@ use serde::{Deserialize, Serialize};
 /// Supported OAuth2 providers for authentication.
 ///
 /// This enum lists all external providers supported by the authentication system.
+/// Each variant represents a third-party OAuth2 provider that can be used for user authentication.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum OAuth2Provider {
@@ -73,7 +74,14 @@ pub enum OAuth2Provider {
 }
 
 impl OAuth2Provider {
-    /// Returns the display name of the provider as a string.
+    /// Returns the display name of the provider as a human-readable string.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let provider = OAuth2Provider::Google;
+    /// assert_eq!(provider.display_name(), "Google");
+    /// ```
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Google => "Google",
@@ -84,6 +92,13 @@ impl OAuth2Provider {
     }
 
     /// Returns the default OAuth2 scopes required for the provider.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let scopes = OAuth2Provider::Google.default_scopes();
+    /// assert!(scopes.contains(&"email"));
+    /// ```
     pub fn default_scopes(&self) -> Vec<&'static str> {
         match self {
             Self::Google => vec!["openid", "email", "profile"],
@@ -95,17 +110,20 @@ impl OAuth2Provider {
 }
 
 /// Represents an OAuth2 token, including access and refresh tokens, expiration, and provider info.
+///
+/// This struct holds all relevant information about an OAuth2 token issued by a provider,
+/// including the access token, optional refresh token, expiration, token type, scope, provider, and creation time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OAuth2Token {
-    /// The access token string.
+    /// The access token string used for authenticated requests.
     pub access_token: String,
-    /// The optional refresh token string.
+    /// The optional refresh token string, used to obtain new access tokens.
     pub refresh_token: Option<String>,
     /// The expiration time of the access token, if available.
     pub expires_at: Option<NaiveDateTime>,
     /// The type of token (usually "Bearer").
     pub token_type: String,
-    /// The scope of the token, if provided.
+    /// The scope of the token, if provided by the provider.
     pub scope: Option<String>,
     /// The OAuth2 provider that issued the token.
     pub provider: OAuth2Provider,
@@ -114,18 +132,38 @@ pub struct OAuth2Token {
 }
 
 impl OAuth2Token {
-    /// Returns true if the token is expired, false otherwise.
+    /// Checks if the token is expired.
+    ///
+    /// Returns `true` if the current time is past the expiration time, or `false` otherwise.
+    /// If `expires_at` is `None`, returns `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let token = OAuth2Token { /* ... */ };
+    /// let expired = token.is_expired();
+    /// ```
     pub fn is_expired(&self) -> bool {
         self.expires_at
             .map(|exp| chrono::Utc::now().naive_utc() > exp)
             .unwrap_or(false)
     }
 
-    /// Returns true if the token will expire within the given threshold (in seconds).
+    /// Checks if the token will expire within the given threshold (in seconds).
     ///
     /// # Arguments
     ///
     /// * `threshold_secs` - Number of seconds to check for imminent expiration.
+    ///
+    /// Returns `true` if the token will expire within `threshold_secs` seconds, or `false` otherwise.
+    /// If `expires_at` is `None`, returns `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let token = OAuth2Token { /* ... */ };
+    /// let soon = token.expires_soon(60);
+    /// ```
     pub fn expires_soon(&self, threshold_secs: u64) -> bool {
         self.expires_at
             .map(|exp| {
@@ -138,10 +176,13 @@ impl OAuth2Token {
 }
 
 /// Represents user information returned by an OAuth2 provider.
+///
+/// This struct contains all relevant user profile information returned by an OAuth2 provider after authentication.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OAuth2UserInfo {
+    /// The internal user ID assigned by the application.
     pub user_id: String,
-    /// The OAuth2 provider.
+    /// The OAuth2 provider that authenticated the user.
     pub provider: OAuth2Provider,
     /// The unique user ID from the provider.
     pub provider_user_id: String,
@@ -163,13 +204,16 @@ pub struct OAuth2UserInfo {
 }
 
 /// Configuration for OAuth2 authentication with a provider.
+///
+/// This struct defines the configuration required to set up OAuth2 authentication for a specific provider.
+/// It includes client credentials, redirect URIs, and additional scopes.
 #[derive(Debug, Clone)]
 pub struct OAuth2Config {
     /// The name of the application using OAuth2.
     pub app_name: String,
-    /// The OAuth2 client ID.
+    /// The OAuth2 client ID issued by the provider.
     pub client_id: String,
-    /// The OAuth2 client secret.
+    /// The OAuth2 client secret issued by the provider.
     pub client_secret: String,
     /// The redirect URI for OAuth2 callbacks.
     /// This is where the OAuth2 provider will redirect users after authorization.
@@ -189,7 +233,18 @@ impl OAuth2Config {
     ///
     /// # Arguments
     ///
-    /// * `provider` - The OAuth2 provider.
+    /// * `provider` - The OAuth2 provider for which to get the authorization URL.
+    ///
+    /// # Returns
+    ///
+    /// A static string containing the provider's authorization endpoint URL.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let config = OAuth2Config { /* ... */ };
+    /// let url = config.auth_url(OAuth2Provider::Google);
+    /// ```
     pub fn auth_url(&self, provider: OAuth2Provider) -> &'static str {
         match provider {
             OAuth2Provider::Google => "https://accounts.google.com/o/oauth2/v2/auth",
@@ -205,7 +260,18 @@ impl OAuth2Config {
     ///
     /// # Arguments
     ///
-    /// * `provider` - The OAuth2 provider.
+    /// * `provider` - The OAuth2 provider for which to get the token endpoint URL.
+    ///
+    /// # Returns
+    ///
+    /// A static string containing the provider's token endpoint URL.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let config = OAuth2Config { /* ... */ };
+    /// let url = config.token_url(OAuth2Provider::Google);
+    /// ```
     pub fn token_url(&self, provider: OAuth2Provider) -> &'static str {
         match provider {
             OAuth2Provider::Google => "https://oauth2.googleapis.com/token",
@@ -221,7 +287,18 @@ impl OAuth2Config {
     ///
     /// # Arguments
     ///
-    /// * `provider` - The OAuth2 provider.
+    /// * `provider` - The OAuth2 provider for which to get the user info endpoint URL.
+    ///
+    /// # Returns
+    ///
+    /// A static string containing the provider's user info endpoint URL.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let config = OAuth2Config { /* ... */ };
+    /// let url = config.user_info_url(OAuth2Provider::Google);
+    /// ```
     pub fn user_info_url(&self, provider: OAuth2Provider) -> &'static str {
         match provider {
             OAuth2Provider::Google => "https://www.googleapis.com/oauth2/v2/userinfo",
@@ -233,13 +310,16 @@ impl OAuth2Config {
 }
 
 /// Represents an OAuth2 session, including state, provider, PKCE verifier, and timing info.
+///
+/// This struct tracks the state of an ongoing OAuth2 authentication session, including CSRF protection,
+/// provider, PKCE verifier, and session timing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OAuth2Session {
     /// The session state string (used for CSRF protection).
     pub state: String,
     /// The OAuth2 provider for this session.
     pub provider: OAuth2Provider,
-    /// The PKCE verifier string, if used.
+    /// The PKCE verifier string, if used for enhanced security.
     pub pkce_verifier: Option<String>,
     /// The time the session was created.
     pub created_at: NaiveDateTime,

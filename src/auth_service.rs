@@ -58,13 +58,27 @@ pub enum SignupMethod {
     },
 }
 
-/// The main structure of the authentication service.
-/// It aggregates the necessary dependencies to perform operations.
-/// The main structure of the authentication service.
+/// The main authentication service, aggregating all dependencies and providing high-level authentication logic.
 ///
 /// `AuthService` aggregates the necessary dependencies to perform authentication operations, such as user registration,
 /// login, token management, and user retrieval. It is designed to be flexible and allows for custom implementations of
 /// password managers, user repositories, and token services.
+///
+/// # Features
+/// - User registration and login
+/// - Password verification and management
+/// - Token generation, validation, and refresh
+/// - User retrieval from tokens
+/// - Extensible via dependency injection
+///
+/// # Examples
+/// ```rust
+/// use cryptic::auth_service::AuthService;
+/// let service = AuthService::default();
+/// ```
+///
+/// # Errors
+/// Most methods return [`AuthError`] on failure.
 pub struct AuthService {
     /// Shared configuration and variables for the authentication service.
     pub vars: Arc<crate::core::vars::AuthServiceVariables>,
@@ -79,8 +93,11 @@ pub struct AuthService {
 }
 
 impl Default for AuthService {
-    /// Creates a default [`AuthService`] instance using default variables, Argon2 password manager,
-    /// in-memory user repository, and JWT token service.
+    /// Creates a default [`AuthService`] instance using default configuration, Argon2 password manager,
+    /// in-memory user repository, JWT token service, and default OAuth2 manager.
+    ///
+    /// # Returns
+    /// Returns a fully initialized [`AuthService`] with default dependencies.
     fn default() -> Self {
         let vars = Arc::new(crate::core::vars::AuthServiceVariables::default());
         Self {
@@ -110,7 +127,7 @@ impl AuthService {
     /// * `oauth2_manager` - Optional custom OAuth2 service. If `None`, uses default OAuth2 manager.
     ///
     /// # Returns
-    /// Returns an [`AuthService`] instance or an [`AuthError`] if construction fails.
+    /// Returns an [`AuthService`] instance on success, or an [`AuthError`] if construction fails.
     pub fn new(
         vars: Arc<crate::core::vars::AuthServiceVariables>,
         password_manager: Option<
@@ -152,13 +169,18 @@ impl AuthService {
         })
     }
 
-    /// Unified login method that supports different authentication methods.
+    /// Authenticates a user using the specified login method.
+    ///
+    /// Supports both credentials-based and OAuth2-based login flows.
     ///
     /// # Arguments
-    /// * `method` - The authentication method to use for login.
+    /// * `method` - The authentication method to use for login. See [`LoginMethod`].
     ///
     /// # Returns
-    /// Returns a tuple of the [`User`] and a [`TokenPair`] if login is successful, or an [`AuthError`] if authentication fails.
+    /// Returns a tuple `(User, TokenPair)` if login is successful, or an [`AuthError`] if authentication fails.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::InvalidCredentials`] if credentials are invalid, or other variants for OAuth2 failures.
     pub async fn login(
         &self,
         method: LoginMethod,
@@ -264,13 +286,18 @@ impl AuthService {
         }
     }
 
-    /// Unified signup method that supports different registration methods.
+    /// Registers a new user using the specified signup method.
+    ///
+    /// Supports both credentials-based and OAuth2-based registration flows.
     ///
     /// # Arguments
-    /// * `method` - The registration method to use for signup.
+    /// * `method` - The registration method to use for signup. See [`SignupMethod`].
     ///
     /// # Returns
-    /// Returns a tuple of the [`User`] and a [`TokenPair`] if signup is successful, or an [`AuthError`] if registration fails.
+    /// Returns a tuple `(User, TokenPair)` if signup is successful, or an [`AuthError`] if registration fails.
+    ///
+    /// # Errors
+    /// Returns [`AuthError::SignupError`] or other variants for OAuth2 failures.
     pub async fn signup(
         &self,
         method: SignupMethod,
@@ -520,10 +547,10 @@ impl AuthService {
     /// * `state` - The state parameter for CSRF protection.
     ///
     /// # Returns
-    /// Returns the updated user on success.
+    /// Returns the updated [`User`] on success.
     ///
     /// # Errors
-    /// Returns [`AuthError`] if the user doesn't exist, OAuth exchange fails, or linking fails.
+    /// Returns [`AuthError::UserNotFound`] if the user doesn't exist, or other variants for OAuth2 failures.
     pub async fn link_oauth_account(
         &self,
         user_id: &str,
@@ -562,10 +589,10 @@ impl AuthService {
     /// * `provider` - The OAuth2 provider to unlink.
     ///
     /// # Returns
-    /// Returns the updated user on success.
+    /// Returns the updated [`User`] on success.
     ///
     /// # Errors
-    /// Returns [`AuthError`] if the user doesn't exist or update fails.
+    /// Returns [`AuthError::UserNotFound`] if the user doesn't exist, or other variants for update failures.
     pub async fn unlink_oauth_account(
         &self,
         user_id: &str,
@@ -587,16 +614,16 @@ impl AuthService {
         Ok(user)
     }
 
-    /// Gets all linked OAuth accounts for a user.
+    /// Retrieves all OAuth providers linked to a user.
     ///
     /// # Arguments
     /// * `user_id` - The ID of the user.
     ///
     /// # Returns
-    /// Returns a vector of OAuth providers that are linked to the user.
+    /// Returns a vector of [`OAuth2Provider`]s that are linked to the user.
     ///
     /// # Errors
-    /// Returns [`AuthError`] if the user doesn't exist.
+    /// Returns [`AuthError::UserNotFound`] if the user doesn't exist.
     pub async fn get_linked_oauth_providers(
         &self,
         user_id: &str,
@@ -610,13 +637,13 @@ impl AuthService {
         Ok(user.oauth_accounts.keys().copied().collect())
     }
 
-    /// Gets the redirect_frontend_uri for the given OAuth2 provider.
+    /// Retrieves the frontend redirect URI for the specified OAuth2 provider.
     ///
     /// # Arguments
-    /// * `provider` - The OAuth2 provider to get the redirect_frontend_uri for.
+    /// * `provider` - The OAuth2 provider to get the redirect frontend URI for.
     ///
     /// # Returns
-    /// Returns the redirect_frontend_uri as a string, or an [`AuthError`] if the provider configuration is missing.
+    /// Returns the redirect frontend URI as a `String`, or an [`AuthError`] if the provider configuration is missing.
     pub async fn get_oauth2_redirect_frontend_uri(
         &self,
         provider: crate::core::oauth::store::OAuth2Provider,

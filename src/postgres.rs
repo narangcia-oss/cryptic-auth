@@ -22,10 +22,19 @@ use crate::{core::user::User, error::AuthError};
 #[cfg(feature = "postgres")]
 use tokio::sync::Mutex;
 
-/// A PostgreSQL-backed implementation of the user repository.
+/// A PostgreSQL-backed implementation of the user repository for Cryptic.
 ///
 /// This struct manages a single mutable PostgreSQL connection for user and credential operations.
 /// If you need connection pooling, wrap this repository in a pool-aware struct.
+///
+/// # Thread Safety
+///
+/// The underlying connection is protected by a [`tokio::sync::Mutex`] to ensure safe concurrent access.
+///
+/// # Usage
+///
+/// This repository is intended for use with the `postgres` feature enabled. It provides all user CRUD operations
+/// and schema validation for the required tables and constraints.
 #[derive(Debug)]
 #[cfg(feature = "postgres")]
 pub struct PgUserRepo {
@@ -37,13 +46,30 @@ pub struct PgUserRepo {
 impl PgUserRepo {
     /// Checks that the required PostgreSQL schema for Cryptic exists and is valid.
     ///
-    /// This function verifies the existence and structure of the `cryptic_users`,
-    /// `cryptic_credentials`, and `cryptic_oauth_accounts` tables, their columns,
-    /// primary keys, unique constraints, and foreign key relationships.
+    /// This function verifies the existence and structure of the following tables:
+    /// - `cryptic_users`
+    /// - `cryptic_credentials`
+    /// - `cryptic_oauth_accounts`
+    ///
+    /// It checks for required columns, primary keys, unique constraints, and foreign key relationships.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to an established [`sqlx::PgConnection`].
     ///
     /// # Errors
     ///
     /// Returns [`AuthError::DatabaseError`] if any required table, column, or constraint is missing or invalid.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use cryptic::postgres::PgUserRepo;
+    /// # async fn check(conn: &mut sqlx::PgConnection) {
+    /// PgUserRepo::check_schema(conn).await?;
+    /// # Ok::<(), cryptic::error::AuthError>(())
+    /// # }
+    /// ```
     pub async fn check_schema(
         conn: &mut sqlx::PgConnection,
     ) -> Result<(), crate::error::AuthError> {
@@ -343,7 +369,7 @@ impl PgUserRepo {
     ///
     /// # Errors
     ///
-    /// This function does not perform schema validation. Call [`check_schema`] separately if needed.
+    /// This function does not perform schema validation. Call [`PgUserRepo::check_schema`] separately if needed.
     pub async fn new(conn: sqlx::PgConnection) -> Result<Self, crate::error::AuthError> {
         Ok(Self {
             conn: Mutex::new(conn),
@@ -355,6 +381,9 @@ impl PgUserRepo {
 #[async_trait]
 impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     /// Adds a new user and their credentials to the database.
+    ///
+    /// Inserts a new user record into the `cryptic_users` table, along with associated credentials
+    /// and OAuth accounts if provided.
     ///
     /// # Arguments
     ///
@@ -440,6 +469,9 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
 
     /// Retrieves a user and their credentials by user ID.
     ///
+    /// Looks up a user in the `cryptic_users` table by their UUID, and fetches associated credentials
+    /// and OAuth accounts.
+    ///
     /// # Arguments
     ///
     /// * `id` - The user ID as a string (UUID format).
@@ -521,6 +553,9 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
 
     /// Retrieves a user and their credentials by identifier (e.g., username or email).
     ///
+    /// Looks up a user by their unique identifier in the `cryptic_credentials` table, then fetches
+    /// the full user record and associated data.
+    ///
     /// # Arguments
     ///
     /// * `identifier` - The unique identifier for the user.
@@ -546,6 +581,9 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     }
 
     /// Updates a user's credentials and metadata in the database.
+    ///
+    /// Updates the `updated_at` timestamp in the `cryptic_users` table, and updates credentials
+    /// in the `cryptic_credentials` table if provided.
     ///
     /// # Arguments
     ///
@@ -592,6 +630,9 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
 
     /// Deletes a user and their credentials from the database by user ID.
     ///
+    /// Removes the user record from the `cryptic_users` table, along with any associated credentials
+    /// and OAuth accounts (if foreign key constraints are set to cascade).
+    ///
     /// # Arguments
     ///
     /// * `id` - The user ID as a string (UUID format).
@@ -610,6 +651,9 @@ impl crate::core::user::persistence::traits::UserRepository for PgUserRepo {
     }
 
     /// Retrieves a user by their OAuth provider and provider user ID.
+    ///
+    /// Looks up a user in the `cryptic_oauth_accounts` table by provider and provider user ID,
+    /// then fetches the full user record and associated data.
     ///
     /// # Arguments
     ///

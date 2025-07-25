@@ -50,9 +50,10 @@ use crate::AuthError;
 
 use log::{debug, info};
 
-/// Type alias for a fully configured OAuth2 BasicClient
+/// Type alias for a fully configured OAuth2 BasicClient.
 ///
-/// This type is used internally for managing provider-specific OAuth2 clients.
+/// This alias simplifies the usage of the [`oauth2::Client`] type with all required generic parameters for standard OAuth2 flows.
+/// It is used internally to manage provider-specific OAuth2 clients, ensuring type safety and consistency across supported providers.
 type ConfiguredBasicClient = oauth2::Client<
     oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
     oauth2::StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
@@ -68,9 +69,27 @@ type ConfiguredBasicClient = oauth2::Client<
 
 /// Manages OAuth2 authentication flows for multiple providers.
 ///
-/// The [`OAuth2Manager`] struct implements the [`OAuth2Service`] trait and provides methods
-/// for generating authorization URLs, exchanging codes for tokens, refreshing tokens, and
-/// fetching user information from supported OAuth2 providers.
+/// The [`OAuth2Manager`] struct implements the [`OAuth2Service`] trait and provides methods for:
+/// - Generating authorization URLs for OAuth2 login flows
+/// - Exchanging authorization codes for access and refresh tokens
+/// - Refreshing expired access tokens
+/// - Fetching user information from provider-specific endpoints
+/// - Managing provider configuration and HTTP clients
+///
+/// # Supported Providers
+/// - Google
+/// - GitHub
+/// - Discord
+/// - Microsoft
+///
+/// # Example
+/// ```rust
+/// use crate::core::oauth::{OAuth2Manager, OAuth2Provider, OAuth2Config};
+/// use std::collections::HashMap;
+/// let mut configs = HashMap::new();
+/// configs.insert(OAuth2Provider::Google, OAuth2Config::default_google());
+/// let manager = OAuth2Manager::new(configs);
+/// ```
 pub struct OAuth2Manager {
     /// Map of OAuth2 providers to their configuration.
     configs: HashMap<OAuth2Provider, OAuth2Config>,
@@ -80,12 +99,10 @@ impl OAuth2Manager {
     /// Creates a new [`OAuth2Manager`] with the provided provider configurations.
     ///
     /// # Arguments
-    ///
-    /// * `configs` - A map of [`OAuth2Provider`] to [`OAuth2Config`]
+    /// * `configs` - A map of [`OAuth2Provider`] to [`OAuth2Config`] containing all provider-specific settings.
     ///
     /// # Returns
-    ///
-    /// A new [`OAuth2Manager`] instance.
+    /// A new [`OAuth2Manager`] instance ready to manage OAuth2 flows for the configured providers.
     pub fn new(configs: HashMap<OAuth2Provider, OAuth2Config>) -> Self {
         info!(
             "Initializing OAuth2Manager with {} provider configs",
@@ -95,15 +112,18 @@ impl OAuth2Manager {
         Self { configs }
     }
 
-    /// Returns a configured HTTP client for the given provider with appropriate User-Agent.
+    /// Returns a configured HTTP client for the given provider with the appropriate User-Agent.
     ///
     /// # Arguments
-    ///
-    /// * `provider` - The OAuth2 provider to get the HTTP client for.
+    /// * `provider` - The OAuth2 provider for which to create the HTTP client.
     ///
     /// # Errors
+    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing or the client cannot be built.
     ///
-    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing.
+    /// # Example
+    /// ```rust
+    /// let client = manager.get_http_client(OAuth2Provider::Google)?;
+    /// ```
     fn get_http_client(&self, provider: OAuth2Provider) -> Result<Client, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
             AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
@@ -118,12 +138,15 @@ impl OAuth2Manager {
     /// Returns a configured OAuth2 client for the given provider.
     ///
     /// # Arguments
-    ///
-    /// * `provider` - The OAuth2 provider to get the client for.
+    /// * `provider` - The OAuth2 provider for which to create the client.
     ///
     /// # Errors
+    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing or contains invalid URLs.
     ///
-    /// Returns [`AuthError::ConfigError`] if the provider configuration is missing or invalid.
+    /// # Example
+    /// ```rust
+    /// let client = manager.get_client(OAuth2Provider::GitHub)?;
+    /// ```
     pub fn get_client(&self, provider: OAuth2Provider) -> Result<ConfiguredBasicClient, AuthError> {
         debug!("Getting OAuth2 client for provider: {provider:?}");
         let config = self.configs.get(&provider).ok_or_else(|| {
@@ -165,14 +188,20 @@ impl OAuth2Manager {
 
     /// Parses user information from the provider's user info response.
     ///
-    /// # Arguments
+    /// This method extracts and normalizes user profile data from the JSON response returned by the provider's user info endpoint.
+    /// The parsing logic is provider-specific and handles differences in field names and formats.
     ///
-    /// * `provider` - The OAuth2 provider.
+    /// # Arguments
+    /// * `provider` - The OAuth2 provider whose response is being parsed.
     /// * `response_body` - The JSON response body from the provider's user info endpoint.
     ///
     /// # Returns
+    /// Returns [`OAuth2UserInfo`] on success, or [`AuthError`] if required fields are missing or the response is invalid.
     ///
-    /// Returns [`OAuth2UserInfo`] on success, or [`AuthError`] on failure.
+    /// # Example
+    /// ```rust
+    /// let user_info = manager.parse_user_info(OAuth2Provider::Google, json_response).await?;
+    /// ```
     pub async fn parse_user_info(
         &self,
         provider: OAuth2Provider,
@@ -557,15 +586,20 @@ impl OAuth2Service for OAuth2Manager {
 }
 
 impl OAuth2Manager {
-    /// Gets the redirect_frontend_uri for the given provider.
+    /// Gets the frontend redirect URI for the given provider.
+    ///
+    /// This URI is typically used to redirect users back to the frontend application after completing the OAuth2 flow.
     ///
     /// # Arguments
-    ///
-    /// * `provider` - The OAuth2 provider to get the redirect_frontend_uri for.
+    /// * `provider` - The OAuth2 provider for which to retrieve the frontend redirect URI.
     ///
     /// # Returns
+    /// Returns the frontend redirect URI as a string, or an [`AuthError`] if the provider configuration is missing.
     ///
-    /// Returns the redirect_frontend_uri as a string, or an [`AuthError`] if the provider configuration is missing.
+    /// # Example
+    /// ```rust
+    /// let uri = manager.get_redirect_frontend_uri(OAuth2Provider::Discord)?;
+    /// ```
     pub fn get_redirect_frontend_uri(&self, provider: OAuth2Provider) -> Result<String, AuthError> {
         let config = self.configs.get(&provider).ok_or_else(|| {
             AuthError::ConfigError(format!("No config found for provider: {provider:?}"))
@@ -573,16 +607,21 @@ impl OAuth2Manager {
         Ok(config.redirect_frontend_uri.clone())
     }
 
-    /// Sets the user_id field in OAuth2UserInfo to link it to a cryptic user.
+    /// Sets the `user_id` field in [`OAuth2UserInfo`] to link it to a cryptic user.
+    ///
+    /// This is used to associate an external OAuth2 identity with an internal user account.
     ///
     /// # Arguments
-    ///
     /// * `oauth_info` - The OAuth user info to update.
     /// * `user_id` - The cryptic user ID to link to.
     ///
     /// # Returns
+    /// The updated [`OAuth2UserInfo`] with the `user_id` field set.
     ///
-    /// The updated OAuth2UserInfo with the user_id set.
+    /// # Example
+    /// ```rust
+    /// let linked_info = OAuth2Manager::link_to_user(oauth_info, user_id);
+    /// ```
     pub fn link_to_user(mut oauth_info: OAuth2UserInfo, user_id: String) -> OAuth2UserInfo {
         info!("Linking OAuth2UserInfo to user_id: {user_id}");
         oauth_info.user_id = user_id;
@@ -591,6 +630,13 @@ impl OAuth2Manager {
 }
 
 /// Provides a default empty [`OAuth2Manager`] with no provider configurations.
+///
+/// This implementation is useful for testing or initializing the manager before loading provider configs.
+///
+/// # Example
+/// ```rust
+/// let manager = OAuth2Manager::default();
+/// ```
 impl Default for OAuth2Manager {
     fn default() -> Self {
         Self::new(HashMap::new())
