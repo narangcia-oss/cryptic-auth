@@ -143,7 +143,7 @@ impl OAuth2Manager {
             AuthError::ConfigError(format!("Invalid token URL: {e}"))
         })?;
 
-        let redirect_url = RedirectUrl::new(config.redirect_uri.clone()).map_err(|e| {
+        let redirect_url = RedirectUrl::new(config.redirect_callback_uri.clone()).map_err(|e| {
             debug!("Invalid redirect URL for provider {provider:?}: {e}");
             AuthError::ConfigError(format!("Invalid redirect URL: {e}"))
         })?;
@@ -151,7 +151,7 @@ impl OAuth2Manager {
         debug!("OAuth2 client configured for provider: {provider:?}");
         debug!("App Name: {app_name}");
         debug!("Client ID: {}", config.client_id);
-        debug!("Redirect URI: {}", config.redirect_uri);
+        debug!("Redirect URI: {}", config.redirect_callback_uri);
         debug!("Auth URL: {}", config.auth_url(provider));
         debug!("Token URL: {}", config.token_url(provider));
         let client = BasicClient::new(ClientId::new(config.client_id.clone()))

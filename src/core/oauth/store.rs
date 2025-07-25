@@ -174,7 +174,7 @@ pub struct OAuth2Config {
     /// The redirect URI for OAuth2 callbacks.
     /// This is where the OAuth2 provider will redirect users after authorization.
     /// It should point to your server's callback endpoint (e.g., `/oauth/{provider}/callback`).
-    pub redirect_uri: String,
+    pub redirect_callback_uri: String,
     /// The redirect URI for the user to go back to the frontend application.
     /// After successful OAuth2 authentication, the server will redirect the user to this URI
     /// with authentication tokens included in the URL fragment (e.g., `#access_token=...&refresh_token=...`).
