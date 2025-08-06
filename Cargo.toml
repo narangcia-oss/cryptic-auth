@@ -6,7 +6,7 @@ description = "A robust, modular, high-level, and secure authentication crate fo
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/narangcia-oss/cryptic-auth"
-documentation = "https://docs.rs/narangcia-cryptic"
+documentation = "https://docs.rs/narangcia-cryptic-auth"
 keywords = ["auth", "authentication", "security", "jwt", "argon2"]
 categories = ["authentication", "cryptography", "web-programming"]
 
