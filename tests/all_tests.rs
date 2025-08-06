@@ -1,6 +1,6 @@
-//! # Integration and Unit Tests for narangcia_cryptic
+//! # Integration and Unit Tests for narangcia_cryptic_auth
 //!
-//! This test module covers integration and unit tests for the main features of the `narangcia_cryptic` crate, including:
+//! This test module covers integration and unit tests for the main features of the `narangcia_cryptic_auth` crate, including:
 //! - Hashing and salt generation
 //! - Authentication service (signup, login, JWT)
 //! - User persistence (in-memory repository)
@@ -20,7 +20,7 @@
 //!
 // --- Hashing (Argon2Hasher, generate_secure_salt) Integration Tests ---
 use argon2::password_hash::SaltString;
-use narangcia_cryptic::core::hash::{Argon2Hasher, generate_secure_salt};
+use narangcia_cryptic_auth::core::hash::{Argon2Hasher, generate_secure_salt};
 
 #[test]
 /// Tests that `generate_secure_salt` produces a valid, non-empty, base64-encoded salt string.
@@ -58,7 +58,7 @@ fn test_argon2_hasher_hash_and_verify() {
     assert!(verify_fail.is_ok());
     assert!(!verify_fail.unwrap());
 }
-use narangcia_cryptic::AuthService;
+use narangcia_cryptic_auth::AuthService;
 
 #[tokio::test]
 /// Tests the `AuthService::signup` method for successful user signup.
@@ -70,10 +70,12 @@ async fn test_auth_service_signup_not_implemented() {
     let auth_service = AuthService::default();
 
     let result = auth_service
-        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
-            identifier: "test_user".to_string(),
-            password: "plain_password".to_string(),
-        })
+        .signup(
+            narangcia_cryptic_auth::auth_service::SignupMethod::Credentials {
+                identifier: "test_user".to_string(),
+                password: "plain_password".to_string(),
+            },
+        )
         .await;
     assert!(result.is_ok());
 }
@@ -84,23 +86,27 @@ async fn test_auth_service_signup_not_implemented() {
 /// - Signs up a user.
 /// - Attempts login with correct credentials and expects success.
 async fn test_auth_service_login_success() {
-    let auth_service = narangcia_cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic_auth::AuthService::default();
 
     // Sign up the user first
     let signup_result = auth_service
-        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
-            identifier: "test_user".to_string(),
-            password: "plain_password".to_string(),
-        })
+        .signup(
+            narangcia_cryptic_auth::auth_service::SignupMethod::Credentials {
+                identifier: "test_user".to_string(),
+                password: "plain_password".to_string(),
+            },
+        )
         .await;
     assert!(signup_result.is_ok());
 
     // Now test login with correct credentials
     let login_result = auth_service
-        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
-            identifier: "test_user".to_string(),
-            password: "plain_password".to_string(),
-        })
+        .login(
+            narangcia_cryptic_auth::auth_service::LoginMethod::Credentials {
+                identifier: "test_user".to_string(),
+                password: "plain_password".to_string(),
+            },
+        )
         .await;
     assert!(login_result.is_ok());
 }
@@ -111,13 +117,15 @@ async fn test_auth_service_login_success() {
 /// - Attempts login with non-existent user and wrong password.
 /// - Expects an error with the message "Invalid credentials provided."
 async fn test_auth_service_login_invalid_credentials() {
-    let auth_service = narangcia_cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic_auth::AuthService::default();
 
     let result = auth_service
-        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
-            identifier: "nonexistent_user".to_string(),
-            password: "wrong_password".to_string(),
-        })
+        .login(
+            narangcia_cryptic_auth::auth_service::LoginMethod::Credentials {
+                identifier: "nonexistent_user".to_string(),
+                password: "wrong_password".to_string(),
+            },
+        )
         .await;
     assert!(result.is_err());
     assert_eq!(
@@ -126,8 +134,8 @@ async fn test_auth_service_login_invalid_credentials() {
     );
 }
 
-use narangcia_cryptic::core::token::TokenService;
-use narangcia_cryptic::core::token::jwt::JwtTokenService;
+use narangcia_cryptic_auth::core::token::TokenService;
+use narangcia_cryptic_auth::core::token::jwt::JwtTokenService;
 
 #[tokio::test]
 /// Tests JWT token pair generation and validation using `JwtTokenService`.
@@ -212,9 +220,9 @@ async fn test_jwt_invalid_token() {
 }
 
 // --- User Persistence (InMemoryUserRepo) Integration Tests ---
-use narangcia_cryptic::core::credentials::{Credentials, PlainPassword};
-use narangcia_cryptic::core::user::User;
-use narangcia_cryptic::core::user::persistence::{InMemoryUserRepo, UserRepository};
+use narangcia_cryptic_auth::core::credentials::{Credentials, PlainPassword};
+use narangcia_cryptic_auth::core::user::User;
+use narangcia_cryptic_auth::core::user::persistence::{InMemoryUserRepo, UserRepository};
 
 #[tokio::test]
 /// Tests adding and retrieving a user in `InMemoryUserRepo`.
@@ -224,7 +232,7 @@ use narangcia_cryptic::core::user::persistence::{InMemoryUserRepo, UserRepositor
 /// - Ensures the user data matches what was added.
 async fn test_in_memory_user_repo_add_and_get_user() {
     let repo = InMemoryUserRepo::new();
-    let auth_service = narangcia_cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic_auth::AuthService::default();
     let user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
         "id1".to_string(),
@@ -252,7 +260,7 @@ async fn test_in_memory_user_repo_add_and_get_user() {
 /// - Adds a user, updates the identifier, and verifies the update is persisted.
 async fn test_in_memory_user_repo_update_user() {
     let repo = InMemoryUserRepo::new();
-    let auth_service = narangcia_cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic_auth::AuthService::default();
     let mut user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
         "id2".to_string(),
@@ -280,7 +288,7 @@ async fn test_in_memory_user_repo_update_user() {
 /// - Ensures the user is removed and that deleting again returns an error.
 async fn test_in_memory_user_repo_delete_user() {
     let repo = InMemoryUserRepo::new();
-    let auth_service = narangcia_cryptic::AuthService::default();
+    let auth_service = narangcia_cryptic_auth::AuthService::default();
     let user = User::with_plain_password(
         auth_service.password_manager.as_ref(),
         "id3".to_string(),
@@ -299,7 +307,7 @@ async fn test_in_memory_user_repo_delete_user() {
     assert!(del_again.is_err());
 }
 
-use narangcia_cryptic::core::vars::AuthServiceVariables;
+use narangcia_cryptic_auth::core::vars::AuthServiceVariables;
 
 #[test]
 /// Tests the default values of `AuthServiceVariables`.
@@ -347,7 +355,7 @@ fn test_auth_service_variables_clone_and_debug() {
 }
 
 // --- Credentials and PlainPassword Integration Tests ---
-use narangcia_cryptic::core::password::Argon2PasswordManager;
+use narangcia_cryptic_auth::core::password::Argon2PasswordManager;
 
 #[tokio::test]
 /// Tests creating and verifying `Credentials` from a plain password.

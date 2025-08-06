@@ -68,8 +68,8 @@
 //!
 //! See the project README for more details.
 
-use narangcia_cryptic::core::user::persistence::traits::UserRepository;
-use narangcia_cryptic::{core::user::User, postgres::PgUserRepo};
+use narangcia_cryptic_auth::core::user::persistence::traits::UserRepository;
+use narangcia_cryptic_auth::{core::user::User, postgres::PgUserRepo};
 use sqlx::PgConnection;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
@@ -117,7 +117,7 @@ async fn main() {
             }
             let user = User {
                 id: args[3].clone(),
-                credentials: narangcia_cryptic::core::credentials::Credentials {
+                credentials: narangcia_cryptic_auth::core::credentials::Credentials {
                     user_id: args[3].clone(),
                     identifier: args[4].clone(),
                     password_hash: args[5].clone(),

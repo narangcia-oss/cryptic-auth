@@ -101,7 +101,7 @@
 //! See the module-level documentation and the `README.md` for detailed usage instructions.
 
 use clap::{Parser, Subcommand};
-use narangcia_cryptic::{AuthService, CrypticUser as User, core::credentials::PlainPassword};
+use narangcia_cryptic_auth::{AuthService, CrypticUser as User, core::credentials::PlainPassword};
 use std::io::{self, Write};
 
 /// Command-line interface for the Cryptic authentication service.
@@ -226,7 +226,7 @@ async fn signup_user(
     println!("🔐 Creating new user account...");
 
     match auth_service
-        .signup(narangcia_cryptic::auth_service::SignupMethod::Credentials {
+        .signup(narangcia_cryptic_auth::auth_service::SignupMethod::Credentials {
             identifier: username.to_string(),
             password: password.to_string(),
         })
@@ -266,7 +266,7 @@ async fn login_user(
     println!("🔑 Attempting to log in...");
 
     match auth_service
-        .login(narangcia_cryptic::auth_service::LoginMethod::Credentials {
+        .login(narangcia_cryptic_auth::auth_service::LoginMethod::Credentials {
             identifier: username.to_string(),
             password: password.to_string(),
         })
