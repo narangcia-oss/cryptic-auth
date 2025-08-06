@@ -1,2 +1,2 @@
-window.ALL_CRATES = ["narangcia_cryptic"];
-//{"start":21,"fragment_lengths":[19]}
+window.ALL_CRATES = ["narangcia_cryptic_auth"];
+//{"start":21,"fragment_lengths":[24]}
